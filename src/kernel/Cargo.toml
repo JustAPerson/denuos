@@ -1,0 +1,17 @@
+[package]
+name = "kernel"
+version = "0.1.0"
+authors = ["Jason Priest <jpriest@mit.edu>"]
+
+[lib]
+crate-type = ["staticlib"]
+path = "lib.rs"
+
+[dependencies]
+rlibc = "1.0.0"
+
+[profile.dev]
+panic = "abort"
+
+[profile.release]
+panic = "abort"

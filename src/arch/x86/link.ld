@@ -1,0 +1,22 @@
+/*
+ * This file originated from Philipp Oppermann's Rust OS blog series.
+ * Copyright 2015 Philipp Oppermann. Please see the original license:
+ * https://github.com/phil-opp/blog_os/blob/master/LICENSE-MIT
+ */
+
+ENTRY(start32)
+
+SECTIONS {
+    . = 1M;
+
+    .boot :
+    {
+        /* ensure that the multiboot header is at the beginning */
+        *(.multiboot_header)
+    }
+
+    .text :
+    {
+        *(.text)
+    }
+}

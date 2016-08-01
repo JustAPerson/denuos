@@ -28,7 +28,7 @@ clean:
 
 iso: $(isofile)
 
-kernelbin  := ./bin/kernel.bin
+kernelbin := ./bin/kernel.bin
 isofs   := ./bin/iso
 grubcfg := ./src/arch/x86/grub.cfg
 $(isofile): $(kernelbin)
@@ -38,10 +38,9 @@ $(isofile): $(kernelbin)
 	cp $(grubcfg) $(isofs)/boot/grub/grub.cfg
 	grub-mkrescue -o $(isofile) $(isofs) 2>/dev/null
 
-bootsrcs := multiboot.s boot32.s
+bootsrcs := multiboot.s boot32.s boot64.s
 bootobjs := $(bootsrcs:%.s=%.o)
 bootobjs := $(addprefix ./bin/boot/, $(bootobjs))
-
 $(kernelbin): $(bootobjs)
 	ld -n -T ./src/arch/x86/link.ld -o $@ $^
 

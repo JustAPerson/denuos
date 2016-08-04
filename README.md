@@ -42,6 +42,19 @@ make iso
 make run
 ```
 
+Credits
+=======
+Denuos is inspired by several similar Rust projects. I would highly recommend
+checking out the following projects:
+
+- [Philipp Oppermann's Blog Series][phil]
+- [intermezzOS][mzos]
+- [Redox][redox]
+
+[phil]: http://os.phil-opp.com/
+[mzos]: https://intermezzos.github.io/
+[redox]: https://www.redox-os.org/
+
 License
 =======
 
@@ -50,3 +63,4 @@ Copyright the Denuos Project Contributors.
 Denuos is dual-licensed under the terms of the Apache License (Version 2.0)
 or the MIT License at your option. For details, see
 [LICENSE-APACHE](LICENSE-APACHE) or [LICENSE-MIT](LICENSE-MIT).
+

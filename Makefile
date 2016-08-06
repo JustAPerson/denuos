@@ -20,7 +20,8 @@ QEMU ?= qemu-system-x86_64
 run: $(isofile)
 	$(QEMU) $(QEMUFLAGS) -cdrom $<
 
-debug: QEMUFLAGS += -s -S
+# See ./doc/Debugging.md for more info
+debug: QEMUFLAGS += -s -S -d int -no-reboot
 debug: run
 
 clean:

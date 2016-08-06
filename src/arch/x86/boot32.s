@@ -6,6 +6,7 @@
 ;   0 - Not loaded via a multiboot compliant bootloader
 ;   1 - Incompatible CPU (no cpuid instruction)
 ;   2 - Incompatible CPU (no x86_64 long mode)
+;   3 - Incompatible CPU (no SSE)
 
 global start32
 
@@ -23,6 +24,7 @@ start32:
     ; enter long mode
     call set_up_page_tables
     call enable_paging
+	call enable_sse
 
     ; load the 64 bit GDT
     lgdt [gdt64.pointer]
@@ -155,6 +157,27 @@ enable_paging:
     mov cr0, eax
 
     ret
+
+enable_sse:
+    ; Check for SSE and enable it.
+    mov eax, 0x1
+    cpuid
+    test edx, 1<<25
+    jz .no_SSE
+
+    ; enable SSE
+    mov eax, cr0
+    and ax, 0xFFFB      ; clear coprocessor emulation CR0.EM
+    or ax, 0x2          ; set coprocessor monitoring  CR0.MP
+    mov cr0, eax
+    mov eax, cr4
+    or ax, 3 << 9       ; set CR4.OSFXSR and CR4.OSXMMEXCPT at the same time
+    mov cr4, eax
+
+    ret
+.no_SSE:
+    mov al, "3"
+    jmp error
 
 section .rodata
 gdt64:

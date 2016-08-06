@@ -194,7 +194,7 @@ gdt64:
 ; Necessary since we don't know the memory map yet
 section .bss
 stack_bottom:
-    resb 64
+    resb 4096
 stack_top:
 
 ; Allocate space for page tables

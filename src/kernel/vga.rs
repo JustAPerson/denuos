@@ -1,6 +1,7 @@
 // This file originated from Philipp Oppermann's Rust OS blog series.
 // Copyright 2015 Philipp Oppermann. Please see the original license:
 // https://github.com/phil-opp/blog_os/blob/master/LICENSE-MIT
+// This file has been modified from its original form.
 
 use core::ptr::Unique;
 use core::fmt;
@@ -10,8 +11,8 @@ const BUFFER_HEIGHT: usize = 25;
 const BUFFER_WIDTH: usize = 80;
 
 pub static WRITER: Mutex<Writer> = Mutex::new(Writer {
-    column_position: 0,
-    color_code: ColorCode::new(Color::LightGreen, Color::Black),
+    col: 0, row: 0,
+    color_code: ColorCode::new(Color::White, Color::Black),
     buffer: unsafe { Unique::new(0xb8000 as *mut _) },
 });
 
@@ -28,21 +29,20 @@ macro_rules! print {
 }
 
 pub fn clear_screen() {
-    for _ in 0..BUFFER_HEIGHT {
-        println!("");
-    }
+    WRITER.lock().clear();
 }
 
 pub unsafe fn print_error(fmt: fmt::Arguments) {
     use core::fmt::Write;
 
     let mut writer = Writer {
-        column_position: 0,
+        col: 0, row: 0,
         color_code: ColorCode::new(Color::Red, Color::Black),
         buffer: Unique::new(0xb8000 as *mut _),
     };
     writer.new_line();
-    writer.write_fmt(fmt);
+    // don't .unwrap() / panic in an error handler
+    let _ = writer.write_fmt(fmt);
 }
 
 
@@ -68,27 +68,28 @@ pub enum Color {
 }
 
 pub struct Writer {
-    column_position: usize,
+    col: usize,
+    row: usize,
     color_code: ColorCode,
     buffer: Unique<Buffer>,
 }
 
+/// Writes bytes to Buffer
+///
+/// This grows from top down.
 impl Writer {
     pub fn write_byte(&mut self, byte: u8) {
         match byte {
             b'\n' => self.new_line(),
             byte => {
-                if self.column_position >= BUFFER_WIDTH {
+                if self.col >= BUFFER_WIDTH {
                     self.new_line();
                 }
-                let row = BUFFER_HEIGHT - 1;
-                let col = self.column_position;
-
-                self.buffer().chars[row][col] = ScreenChar {
+                self.buffer().chars[self.row][self.col] = ScreenChar {
                     ascii_character: byte,
                     color_code: self.color_code,
                 };
-                self.column_position += 1;
+                self.col += 1;
             }
         }
     }
@@ -98,12 +99,19 @@ impl Writer {
     }
 
     fn new_line(&mut self) {
-        for row in 0..(BUFFER_HEIGHT - 1) {
-            let buffer = self.buffer();
-            buffer.chars[row] = buffer.chars[row + 1]
+        const LAST_ROW: usize = BUFFER_HEIGHT - 1;
+
+        if self.row >= LAST_ROW {
+            for row in 0..LAST_ROW {
+                let buffer = self.buffer();
+                buffer.chars[row] = buffer.chars[row + 1]
+            }
+        } else {
+            self.row += 1
         }
-        self.clear_row(BUFFER_HEIGHT - 1);
-        self.column_position = 0;
+        let row = self.row; // borrowck
+        self.clear_row(row);
+        self.col = 0;
     }
 
     fn clear_row(&mut self, row: usize) {
@@ -112,6 +120,15 @@ impl Writer {
             color_code: self.color_code,
         };
         self.buffer().chars[row] = [blank; BUFFER_WIDTH];
+    }
+
+    pub fn clear(&mut self) {
+        for i in 0..BUFFER_HEIGHT {
+            // loop to avoid blowing stack
+            self.clear_row(i)
+        }
+        self.col = 0;
+        self.row = 0;
     }
 }
 

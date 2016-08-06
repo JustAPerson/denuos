@@ -4,11 +4,14 @@
 extern crate rlibc;
 extern crate spin;
 
+// Import macros first
+#[macro_use]
+mod vga;
+
 mod vestige;
-#[macro_use] mod vga;
 
 #[no_mangle]
 pub extern fn kmain() {
     vga::clear_screen();
-    println!("Hello, world!");
+    panic!("No userspace to run!");
 }

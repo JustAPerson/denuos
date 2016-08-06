@@ -11,7 +11,8 @@ const BUFFER_HEIGHT: usize = 25;
 const BUFFER_WIDTH: usize = 80;
 
 pub static WRITER: Mutex<Writer> = Mutex::new(Writer {
-    col: 0, row: 0,
+    col: 0,
+    row: 0,
     color_code: ColorCode::new(Color::White, Color::Black),
     buffer: unsafe { Unique::new(0xb8000 as *mut _) },
 });
@@ -32,17 +33,15 @@ pub fn clear_screen() {
     WRITER.lock().clear();
 }
 
-pub unsafe fn print_error(fmt: fmt::Arguments) {
+pub fn print_error(fmt: fmt::Arguments) {
     use core::fmt::Write;
 
-    let mut writer = Writer {
-        col: 0, row: 0,
-        color_code: ColorCode::new(Color::Red, Color::Black),
-        buffer: Unique::new(0xb8000 as *mut _),
-    };
-    writer.new_line();
-    // don't .unwrap() / panic in an error handler
+    let mut writer = WRITER.lock();
+    let old_colorcode = writer.get_colorcode();
+
+    writer.set_colorcode(ColorCode::new(Color::Red, Color::Black));
     let _ = writer.write_fmt(fmt);
+    writer.set_colorcode(old_colorcode);
 }
 
 
@@ -130,6 +129,14 @@ impl Writer {
         self.col = 0;
         self.row = 0;
     }
+
+    pub fn set_colorcode(&mut self, color_code: ColorCode) {
+        self.color_code = color_code
+    }
+
+    pub fn get_colorcode(&self) -> ColorCode {
+        self.color_code
+    }
 }
 
 impl fmt::Write for Writer {
@@ -142,10 +149,10 @@ impl fmt::Write for Writer {
 }
 
 #[derive(Clone, Copy)]
-struct ColorCode(u8);
+pub struct ColorCode(u8);
 
 impl ColorCode {
-    const fn new(foreground: Color, background: Color) -> ColorCode {
+    pub const fn new(foreground: Color, background: Color) -> ColorCode {
         ColorCode((background as u8) << 4 | (foreground as u8))
     }
 }

@@ -7,6 +7,6 @@ global start64
 section .text
 bits 64
 start64:
-    extern kmain
-    call kmain
+    extern kstart
+    call kstart
     hlt

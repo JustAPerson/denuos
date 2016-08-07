@@ -6,7 +6,8 @@ extern crate spin;
 
 // Import macros first
 #[macro_use]
-mod vga;
+pub mod vga;
 
+pub mod arch;
 pub mod main;
 pub mod vestige;

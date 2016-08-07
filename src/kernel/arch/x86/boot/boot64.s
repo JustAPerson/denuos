@@ -7,6 +7,7 @@ global start64
 section .text
 bits 64
 start64:
+    ; multiboot info in edi
     extern kstart
     call kstart
     hlt

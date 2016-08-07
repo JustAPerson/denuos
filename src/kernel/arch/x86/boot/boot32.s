@@ -15,6 +15,7 @@ bits 32
 start32:
     ; setup stack
     mov esp, stack_top
+    mov edi, ebx ; save multiboot info
 
     ; check CPU compatability
     call check_multiboot

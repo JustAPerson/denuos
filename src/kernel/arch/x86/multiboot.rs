@@ -27,6 +27,7 @@ pub struct MultibootInfo {
     pub basic_mem_info:   Option<&'static BasicMemInfo>,
     pub bios_boot_dev:    Option<&'static BiosBootDevice>,
     pub mem_map:          Option<&'static [MMapEntry]>,
+    pub elf_sections:     Option<ElfSections>,
 }
 
 /// Helper to parse individual multiboot tags
@@ -85,10 +86,25 @@ impl MultibootTags {
 
                     info.mem_map = Some(core::slice::from_raw_parts(entries, n));
                 }
-                // All NYI below
                 7 => { } // VBE
                 8 => { } // framebuffer
-                9 => { } // elf sections
+                9 => {
+                    // elf sections
+                    let num =     *(data as *const u32) as usize;
+                    let entsize = *((data + 4) as *const u32) as usize;
+                    let shndx =   *((data + 8) as *const u32) as usize;
+
+                    let ptr = (data + 12) as *const ElfSection;
+                    // exclude string name tables
+                    let list = core::slice::from_raw_parts(ptr, shndx);
+
+                    info.elf_sections = Some(ElfSections {
+                        num:     num,
+                        list:    list,
+                        entsize: entsize,
+                        shndx:   shndx,
+                    });
+                }
                 10 => { } // APM
                 11 => { } // EFI32
                 12 => { } // EFI64
@@ -159,6 +175,71 @@ pub enum MMapEntryType {
     ACPI     = 3,
     Preserve = 4,
     Bad      = 5,
+}
+
+/// List of ELF sections
+#[repr(C)]
+#[derive(Debug)]
+pub struct ElfSections {
+    pub num:  usize,
+    pub list: &'static [ElfSection],
+    entsize:  usize,
+    shndx:    usize,
+}
+
+/// Limited wrapper around ELF64 sections
+#[repr(C)]
+#[derive(Debug)]
+pub struct ElfSection {
+    sh_name:      u32,
+    sh_type:      u32,
+    sh_flags:     u64,
+    sh_addr:      u64,
+    sh_offset:    u64,
+    sh_size:      u64,
+    sh_link:      u32,
+    sh_info:      u32,
+    sh_addralign: u64,
+    sh_entsize:   u64,
+}
+
+impl ElfSections {
+    /// Return pointer to start of kernel image
+    pub fn image_start(&self) -> usize {
+        self.list.iter().filter(|s| s.is_allocated()).map(|s| s.start()).min().unwrap()
+    }
+
+    /// Return size of kernel image
+    pub fn image_size(&self) -> usize {
+        self.list.iter().filter(|s| s.is_allocated()).map(|s| s.size()).sum()
+    }
+
+    /// Return pointer to the last byte of kernel image
+    pub fn image_end(&self) -> usize {
+        self.list.iter().filter(|s| s.is_allocated()).map(|s| s.end()).max().unwrap()
+    }
+}
+
+impl ElfSection {
+    /// Has this section been loaded into memory?
+    pub fn is_allocated(&self) -> bool {
+        self.sh_flags & 0x2 != 0
+    }
+
+    /// Return pointer to section
+    pub fn start(&self) -> usize {
+        self.sh_addr as usize
+    }
+
+    /// Return size of section
+    pub fn size(&self) -> usize {
+        self.sh_size as usize
+    }
+
+    /// Return pointer to the last byte of section
+    pub fn end(&self) -> usize {
+        self.start() + self.size() - 1
+    }
 }
 
 impl BiosBootDevice {

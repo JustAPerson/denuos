@@ -262,6 +262,18 @@ impl MMapEntry {
     pub fn is_free(&self) -> bool {
         self.ty == MMapEntryType::Free
     }
+
+    pub fn start(&self) -> usize {
+        self.base_addr as usize
+    }
+
+    pub fn size(&self) -> usize {
+        self.length as usize
+    }
+
+    pub fn end(&self) -> usize {
+        self.start() + self.size() - 1
+    }
 }
 
 impl fmt::Debug for BiosBootDevice {

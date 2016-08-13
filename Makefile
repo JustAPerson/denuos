@@ -31,7 +31,7 @@ iso: $(isofile)
 
 kernelbin := ./bin/kernel.bin
 isofs   := ./bin/iso
-grubcfg := ./src/kernel/arch/x86/grub.cfg
+grubcfg := ./src/kernel/arch/x86/boot/grub.cfg
 $(isofile): $(kernelbin)
 	mkdir -p $(isofs)
 	mkdir -p $(isofs)/boot/grub
@@ -50,9 +50,9 @@ bootsrcs := multiboot.s boot32.s boot64.s
 bootobjs := $(bootsrcs:%.s=%.o)
 bootobjs := $(addprefix ./bin/boot/, $(bootobjs))
 $(kernelbin): $(bootobjs) $(kernelobj)
-	ld --gc-sections -n -T ./src/kernel/arch/x86/link.ld -o $@ $^
+	ld --gc-sections -n -T ./src/kernel/arch/x86/boot/link.ld -o $@ $^
 
-./bin/boot/%.o: ./src/kernel/arch/x86/%.s | ./bin/boot
+./bin/boot/%.o: ./src/kernel/arch/x86/boot/%.s | ./bin/boot
 	nasm -f elf64 -o $@ $<
 
 

@@ -2,7 +2,7 @@ pub mod frame_allocator;
 pub mod multiboot;
 
 use self::multiboot::MultibootTags;
-use self::frame_allocator::{MemRegion, FrameAllocator};
+use self::frame_allocator::{MemRegion, frame_alloc, get_fallocator};
 
 static mut PROTECTED_REGIONS: &'static mut [MemRegion; 2] = &mut [
     (0, 0), // kernel
@@ -22,8 +22,10 @@ pub unsafe extern fn kstart(multiboot_tags: &MultibootTags) {
     println!("multiboot region {:?}", PROTECTED_REGIONS[1]);
 
     let mmap = multiboot_info.mem_map.unwrap();
-    let mut allocator = FrameAllocator::new(mmap, PROTECTED_REGIONS);
+    frame_allocator::initialize(mmap, PROTECTED_REGIONS);
 
-    println!("first free page 0x{:x}", allocator.alloc().addr());
-    println!("free pages {} ({} MiB)", allocator.free_pages(), allocator.free_pages() / 256);
+    let free_pages = get_fallocator().free_pages();
+    println!("first free page 0x{:x}", frame_alloc().addr());
+    println!("free pages {} ({} MiB)", free_pages, free_pages / 256);
+
 }

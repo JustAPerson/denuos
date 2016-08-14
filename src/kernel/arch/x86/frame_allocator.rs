@@ -8,10 +8,12 @@
 //! a protected region. Protected regions are used to avoid overwriting certain
 //! structures until a better memory mapping can be established.
 
+use core::mem;
+use spin::{Mutex, MutexGuard};
 use super::multiboot::MMapEntry;
 
 /// The size in bytes of a normal page
-const PAGE_SIZE: usize = 4096;
+pub const PAGE_SIZE: usize = 4096;
 
 /// Defines a the first and last byte of a region
 pub type MemRegion = (usize, usize);
@@ -66,7 +68,7 @@ impl FrameAllocator {
     }
 
     /// Deallocate a Frame. Currently NYI.
-    pub fn free(&mut self) {
+    pub fn free(&mut self, _: Frame) {
         // TODO NYI
     }
 
@@ -113,4 +115,24 @@ impl Frame {
         let addr_rounded_up = (addr + MASK) & !MASK;
         Frame::containing(addr_rounded_up)
     }
+}
+
+pub static mut FALLOCATOR: Option<Mutex<FrameAllocator>> = None;
+
+pub unsafe fn initialize(mem_regions: &'static [MMapEntry],
+                         protected_regions: &'static [MemRegion]) {
+    let fallocator = FrameAllocator::new(mem_regions, protected_regions);
+    mem::replace(&mut FALLOCATOR, Some(Mutex::new(fallocator)));
+}
+
+pub fn get_fallocator<'a>() -> MutexGuard<'a, FrameAllocator> {
+    unsafe { FALLOCATOR.as_ref().unwrap().lock() }
+}
+
+pub fn frame_alloc() -> Frame {
+    get_fallocator().alloc()
+}
+
+pub fn frame_free(frame: Frame) {
+    get_fallocator().free(frame)
 }

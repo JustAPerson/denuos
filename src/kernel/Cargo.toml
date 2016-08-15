@@ -10,6 +10,7 @@ path = "lib.rs"
 [dependencies]
 rlibc = "1.0.0"
 spin = "0.4.3"
+bitflags = "0.7"
 
 [profile.dev]
 panic = "abort"

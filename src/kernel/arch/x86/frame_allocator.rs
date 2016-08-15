@@ -8,7 +8,7 @@
 //! a protected region. Protected regions are used to avoid overwriting certain
 //! structures until a better memory mapping can be established.
 
-use core::mem;
+use core;
 use spin::{Mutex, MutexGuard};
 use super::multiboot::MMapEntry;
 
@@ -93,6 +93,15 @@ impl Frame {
         self.index * PAGE_SIZE
     }
 
+    /// Fills frame with zeros. Requires the memory pointed by this frame to be
+    /// identity-mapped.
+    pub fn clear(&mut self) {
+        let ptr = self.addr() as *mut u8;
+        unsafe {
+            core::ptr::write_bytes(ptr, 0, PAGE_SIZE);
+        }
+    }
+
     /// Get the Frame containing this address
     /// ```
     /// Frame::containing(0x00FF).addr() // 0x0000
@@ -122,7 +131,7 @@ pub static mut FALLOCATOR: Option<Mutex<FrameAllocator>> = None;
 pub unsafe fn initialize(mem_regions: &'static [MMapEntry],
                          protected_regions: &'static [MemRegion]) {
     let fallocator = FrameAllocator::new(mem_regions, protected_regions);
-    mem::replace(&mut FALLOCATOR, Some(Mutex::new(fallocator)));
+    core::mem::replace(&mut FALLOCATOR, Some(Mutex::new(fallocator)));
 }
 
 pub fn get_fallocator<'a>() -> MutexGuard<'a, FrameAllocator> {

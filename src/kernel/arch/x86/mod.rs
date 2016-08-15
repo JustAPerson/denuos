@@ -1,5 +1,6 @@
 pub mod frame_allocator;
 pub mod multiboot;
+pub mod paging;
 
 use self::multiboot::MultibootTags;
 use self::frame_allocator::{MemRegion, frame_alloc, get_fallocator};
@@ -28,4 +29,5 @@ pub unsafe extern fn kstart(multiboot_tags: &MultibootTags) {
     println!("first free page 0x{:x}", frame_alloc().addr());
     println!("free pages {} ({} MiB)", free_pages, free_pages / 256);
 
+    let _ = paging::initialize();
 }

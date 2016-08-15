@@ -1,6 +1,12 @@
-#![feature(lang_items, const_fn, unique)]
+#![feature(asm)]
+#![feature(associated_consts)]
+#![feature(const_fn)]
+#![feature(lang_items)]
+#![feature(unique)]
 #![no_std]
 
+#[macro_use]
+extern crate bitflags;
 extern crate rlibc;
 extern crate spin;
 

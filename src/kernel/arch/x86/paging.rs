@@ -1,6 +1,8 @@
 use core;
 
-use super::frame_allocator::frame_alloc;
+use kalloc::{HEAP_SIZE, HEAP_START};
+
+use super::frame_allocator::{frame_alloc, PAGE_SIZE};
 
 pub const PTE_ADDR_MASK: usize = 0x000f_ffff_ffff_f000;
 
@@ -140,6 +142,13 @@ impl<L: NextPageLevel> PageTable<L> {
 pub unsafe fn initialize() -> PT4 {
     let mut pt4 = PT4::new();
     pt4.map_to_1g(0, 0, NONE);
+
+    // map heap
+    for i in 0..HEAP_SIZE / PAGE_SIZE {
+        let addr = i * PAGE_SIZE + HEAP_START;
+        pt4.map_4k(addr, WRITE);
+    }
+
     pt4.activate(); // flushes TLB
     pt4
 }

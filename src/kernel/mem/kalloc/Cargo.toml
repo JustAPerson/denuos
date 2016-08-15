@@ -1,0 +1,10 @@
+[package]
+name = "kalloc"
+version = "0.1.0"
+authors = ["Jason Priest <jpriest@mit.edu>"]
+
+[lib]
+path = "lib.rs"
+
+[dependencies]
+spin = "0.4.3"

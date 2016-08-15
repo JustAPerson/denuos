@@ -1,5 +1,6 @@
 #![feature(asm)]
 #![feature(associated_consts)]
+#![feature(collections)]
 #![feature(const_fn)]
 #![feature(lang_items)]
 #![feature(unique)]
@@ -7,6 +8,9 @@
 
 #[macro_use]
 extern crate bitflags;
+#[macro_use]
+extern crate collections;
+extern crate kalloc;
 extern crate rlibc;
 extern crate spin;
 

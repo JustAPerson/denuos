@@ -12,6 +12,8 @@ rlibc = "1.0.0"
 spin = "0.4.3"
 bitflags = "0.7"
 
+kalloc = { path = "mem/kalloc/" }
+
 [profile.dev]
 panic = "abort"
 

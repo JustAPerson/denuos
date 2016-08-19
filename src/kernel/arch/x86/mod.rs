@@ -1,4 +1,5 @@
 pub mod frame_allocator;
+pub mod interrupts;
 pub mod multiboot;
 pub mod paging;
 
@@ -30,4 +31,5 @@ pub unsafe extern fn kstart(multiboot_tags: &MultibootTags) {
     println!("free pages {} ({} MiB)", free_pages, free_pages / 256);
 
     let _ = paging::initialize();
+    interrupts::initialize();
 }

@@ -1,11 +1,15 @@
+#![feature(alloc)]
 #![feature(asm)]
 #![feature(associated_consts)]
+#![feature(box_syntax)]
 #![feature(collections)]
 #![feature(const_fn)]
 #![feature(lang_items)]
+#![feature(naked_functions)]
 #![feature(unique)]
 #![no_std]
 
+extern crate alloc;
 #[macro_use]
 extern crate bitflags;
 #[macro_use]

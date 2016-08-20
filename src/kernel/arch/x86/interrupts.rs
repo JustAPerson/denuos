@@ -105,6 +105,16 @@ pub fn initialize() {
     idt.load();
 }
 
+/// Enables interrupts
+pub fn enable() {
+    unsafe { asm!("sti") }
+}
+
+/// Disables interrupts
+pub fn disable() {
+    unsafe { asm!("cli") }
+}
+
 /// A collection of interrupt service routines
 #[macro_use]
 pub mod isr {

@@ -3,6 +3,7 @@ pub mod frame_allocator;
 pub mod interrupts;
 pub mod multiboot;
 pub mod paging;
+pub mod pic;
 
 use self::multiboot::MultibootTags;
 use self::frame_allocator::{MemRegion, frame_alloc, get_fallocator};
@@ -32,5 +33,9 @@ pub unsafe extern fn kstart(multiboot_tags: &MultibootTags) {
     println!("free pages {} ({} MiB)", free_pages, free_pages / 256);
 
     let _ = paging::initialize();
+
+    // set up interrupt handlers
     interrupts::initialize();
+    pic::initialize();
+    loop { }
 }

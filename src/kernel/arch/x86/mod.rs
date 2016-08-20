@@ -1,4 +1,5 @@
 pub mod frame_allocator;
+#[macro_use]
 pub mod interrupts;
 pub mod multiboot;
 pub mod paging;

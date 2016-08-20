@@ -106,6 +106,7 @@ pub fn initialize() {
 }
 
 /// A collection of interrupt service routines
+#[macro_use]
 pub mod isr {
     /// Correctly returns from an ISR
     #[inline(always)]
@@ -114,6 +115,42 @@ pub mod isr {
         unreachable!();
     }
 
+    /// Correctly wraps non-destructive interrupt service routines
+    ///
+    /// # Examples
+    /// ```
+    /// isr! {
+    ///     fn system_timer() {
+    ///         println!("system timer");
+    ///     }
+    ///     fn keyboard_input() {
+    ///         println!("keyboard input");
+    ///     }
+    /// }
+    ///
+    /// let mut idt = Idt::new();
+    /// idt.register_isr(0x20, system_timer);
+    /// idt.register_isr(0x21, keyboard_input);
+    /// ```
+    #[macro_export]
+    macro_rules! isr {
+        ( $(fn $name:ident () $code:block)*) => (
+            $(
+                #[naked]
+                fn $name() -> ! {
+                    fn action() {
+                        $code
+                    }
+                    action();
+                    $crate::arch::x86::interrupts::isr::iret();
+                }
+            )*
+        )
+    }
+
+    /// Wraps a simple panic message interrupt
+    // Doesn't require the `isr!` because we don't need to preserve any state
+    // to return to since we panic.
     macro_rules! panic_isr {
         ($name:ident, $msg:expr) => (
             #[naked]

@@ -110,7 +110,7 @@ pub mod isr {
     /// Correctly returns from an ISR
     #[inline(always)]
     pub fn iret() -> ! {
-        unsafe { asm!("iretq"); }
+        unsafe { asm!("iretq" :::: "volatile"); }
         unreachable!();
     }
 

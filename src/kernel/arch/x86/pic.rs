@@ -18,6 +18,7 @@
 ///   - IRQ1 PS/2 Keyboard Input
 
 use super::interrupts;
+use super::intrinsics::{inb, outb};
 
 /// Interrupt vector offset of the master PIC
 pub const PIC1_OFFSET: u8 = 0x20;
@@ -136,16 +137,4 @@ isr! {
         println!("keyboard {:#x}", sc);
         send_eoi(1);
     }
-}
-
-/// Transmit byte to port
-fn outb(port: u16, data: u8) {
-    unsafe { asm!("out dx, al" :: "{dx}"(port),"{al}"(data) :: "intel" ); }
-}
-
-/// Receive byte from port
-fn inb(port: u16) -> u8 {
-    let data;
-    unsafe { asm!("in al, dx" : "={al}"(data) : "{dx}"(port) :: "intel") }
-    data
 }

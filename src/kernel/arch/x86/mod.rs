@@ -1,6 +1,7 @@
 pub mod frame_allocator;
 #[macro_use]
 pub mod interrupts;
+pub mod intrinsics;
 pub mod multiboot;
 pub mod paging;
 pub mod pic;

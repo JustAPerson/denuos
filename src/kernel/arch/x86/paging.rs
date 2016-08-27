@@ -15,7 +15,7 @@ bitflags! {
     pub flags PageFlags: usize {
         const NONE          = 0,
         const PRESENT       = 1 << 0,
-        const WRITE         = 1 << 2,
+        const WRITE         = 1 << 1,
         const USER          = 1 << 2,
         const WRITE_THROUGH = 1 << 3,
         const NO_CACHE      = 1 << 4,
@@ -108,9 +108,9 @@ impl<L: MappableLevel> PageTable<L> {
     fn map_mem(&mut self, index: usize, paddr: usize, flags: PageFlags) {
         self.entries[index].set_addr(paddr);
         self.entries[index].value |= flags.bits();
-        self.entries[index].value |= 0x1; // present
+        self.entries[index].value |= PRESENT.bits();
         if L::can_be_huge() { // allow 2MB / 1GB pages
-            self.entries[index].value |= 0x80; // huge
+            self.entries[index].value |= HUGE.bits();
         }
     }
 }
@@ -118,7 +118,7 @@ impl<L: MappableLevel> PageTable<L> {
 impl<L: NextPageLevel> PageTable<L> {
     fn map_table<'a>(&mut self, index: usize, table: *const PageTable<L::Next>) {
         self.entries[index].set_addr(table as usize);
-        self.entries[index].value |= 1;
+        self.entries[index].value |= PRESENT.bits();
     }
 
     fn get_table_mut(&mut self, index: usize) -> Option<&mut PageTable<L::Next>> {

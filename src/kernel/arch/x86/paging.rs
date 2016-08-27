@@ -118,7 +118,11 @@ impl<L: MappableLevel> PageTable<L> {
 impl<L: NextPageLevel> PageTable<L> {
     fn map_table<'a>(&mut self, index: usize, table: *const PageTable<L::Next>) {
         self.entries[index].set_addr(table as usize);
-        self.entries[index].value |= PRESENT.bits();
+        // if the entry in PT4 is not marked USER, then none of the pages mapped
+        // in any lower tables (PT3-1) can be USER. Thus, mark all entries
+        // pointing to tables as USER. Similar problem for WRITE.
+        // Note: ring0 ignores WRITE flag unless CR0.WP is set
+        self.entries[index].value |= (PRESENT | USER | WRITE).bits();
     }
 
     fn get_table_mut(&mut self, index: usize) -> Option<&mut PageTable<L::Next>> {

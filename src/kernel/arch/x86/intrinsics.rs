@@ -19,3 +19,25 @@ pub fn inb(port: u16) -> u8 {
     unsafe { asm!("in al, dx" : "={al}"(data) : "{dx}"(port) :: "volatile","intel") }
     data
 }
+
+/// Reads model-specific register
+#[inline(always)]
+pub fn rdmsr(register: u32) -> u64 {
+    let (hi, lo): (u64, u64);
+    unsafe { asm!("rdmsr" : "={eax}"(lo),"={edx}"(hi) : "{ecx}"(register) :: "intel" ) }
+    (hi << 32) | lo
+}
+
+/// Writes model-specific register
+#[inline(always)]
+pub fn wrmsr(register: u32, value: u64) {
+    let (hi, lo) = (value >> 32, value & 0xffff_ffff);
+    unsafe { asm!("wrmsr" :: "{ecx}"(register),"{eax}"(lo),"{edx}"(hi) :: "intel" ) }
+}
+
+/// Sets bit in model-specific register
+#[inline(always)]
+pub fn stmsr(register: u32, offset: usize) {
+    let value = rdmsr(register);
+    wrmsr(register, value | (1 << offset));
+}

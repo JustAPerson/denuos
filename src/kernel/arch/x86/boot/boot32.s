@@ -31,7 +31,7 @@ start32:
     lgdt [gdt64.pointer]
 
     ; update selectors
-    mov ax, 16
+    mov ax, gdt64.data
     mov ss, ax  ; stack selector
     mov ds, ax  ; data selector
     mov es, ax  ; extra selector
@@ -180,13 +180,21 @@ enable_sse:
     mov al, "3"
     jmp error
 
+%xdefine SYS     0 << 45
+%xdefine USER    3 << 45
+%xdefine CODE    3 << 43
+%xdefine DATA    2 << 43
+%xdefine LONG    1 << 53
+%xdefine PRESENT 1 << 47
+%xdefine WRITE   1 << 41
+
 section .rodata
 gdt64:
     dq 0 ; zero entry
-.code: equ 0x08
-    dq (1<<44) | (1<<47) | (1<<41) | (1<<43) | (1<<53) ; code segment
-.data: equ 0x10
-    dq (1<<44) | (1<<47) | (1<<41) ; data segment
+.code: equ $ - GDT
+    dq SYS | CODE | PRESENT | LONG
+.data: equ $ - GDT
+    dq SYS | DATA | PRESENT | WRITE
 .pointer:
     dw $ - gdt64 - 1
     dq gdt64

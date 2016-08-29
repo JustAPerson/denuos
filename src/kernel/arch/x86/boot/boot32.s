@@ -28,16 +28,16 @@ start32:
 	call enable_sse
 
     ; load the 64 bit GDT
-    lgdt [gdt64.pointer]
+    lgdt [GDT.pointer]
 
     ; update selectors
-    mov ax, gdt64.data
+    mov ax, GDT.data
     mov ss, ax  ; stack selector
     mov ds, ax  ; data selector
     mov es, ax  ; extra selector
 
     extern start64
-    jmp gdt64.code:start64
+    jmp GDT.code:start64
 
 ; Prints `ERR: ` and the given error code to screen and hangs.
 ; parameter: error code (in ascii) in al
@@ -188,16 +188,18 @@ enable_sse:
 %xdefine PRESENT 1 << 47
 %xdefine WRITE   1 << 41
 
-section .rodata
-gdt64:
+section .data
+
+global GDT
+GDT:
     dq 0 ; zero entry
 .code: equ $ - GDT
     dq SYS | CODE | PRESENT | LONG
 .data: equ $ - GDT
     dq SYS | DATA | PRESENT | WRITE
 .pointer:
-    dw $ - gdt64 - 1
-    dq gdt64
+    dw $ - GDT - 1
+    dq GDT
 
 ; Allocate space for the stack
 ; Necessary since we don't know the memory map yet

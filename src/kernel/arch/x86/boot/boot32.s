@@ -181,7 +181,7 @@ enable_sse:
     jmp error
 
 %xdefine SYS     0 << 45
-%xdefine USER    3 << 45
+%xdefine USR     3 << 45
 %xdefine CODE    3 << 43
 %xdefine DATA    2 << 43
 %xdefine LONG    1 << 53
@@ -192,11 +192,17 @@ section .data
 
 global GDT
 GDT:
-    dq 0 ; zero entry
+; null descriptor
+    dq 0
+; kernel segments
 .code: equ $ - GDT
     dq SYS | CODE | PRESENT | LONG
 .data: equ $ - GDT
     dq SYS | DATA | PRESENT | WRITE
+; userpsace segments
+    dq USR | CODE | PRESENT
+    dq USR | DATA | PRESENT | WRITE
+    dq USR | CODE | PRESENT | LONG
 .pointer:
     dw $ - GDT - 1
     dq GDT

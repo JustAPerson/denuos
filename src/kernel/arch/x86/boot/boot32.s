@@ -187,6 +187,7 @@ enable_sse:
 %xdefine LONG    1 << 53
 %xdefine PRESENT 1 << 47
 %xdefine WRITE   1 << 41
+%xdefine TSS     9 << 40
 
 section .data
 
@@ -203,9 +204,31 @@ GDT:
     dq USR | CODE | PRESENT
     dq USR | DATA | PRESENT | WRITE
     dq USR | CODE | PRESENT | LONG
+; task state segment (16 bytes)
+    dq TSS | PRESENT | tss.size
+    dq 0
 .pointer:
     dw $ - GDT - 1
     dq GDT
+
+global tss
+tss:
+    dd 0         ; reserved
+    dq stack_top ; rsp0
+    dq 0         ;rsp1
+    dq 0         ;rsp2
+    dq 0         ; reserved
+    dq 0         ; ist1
+    dq 0         ; ist2
+    dq 0         ; ist3
+    dq 0         ; ist4
+    dq 0         ; ist5
+    dq 0         ; ist6
+    dq 0         ; ist7
+    dq 0         ; reserved
+    dw 0         ; reserved
+    dw 0         ; iomap offset
+.size: equ $ - tss
 
 ; Allocate space for the stack
 ; Necessary since we don't know the memory map yet

@@ -8,7 +8,7 @@
 
 extern {
     // The GDT is actually defined in `src/kernel/arch/x86/boot/boot32.s`.
-    pub static mut GDT: [usize; 6];
+    pub static mut GDT: [usize; 8];
 }
 
 pub const SYS_CODE_OFFSET: usize = 0x08;
@@ -16,3 +16,5 @@ pub const SYS_DATA_OFFSET: usize = 0x10;
 
 pub const USR_CODE_OFFSET: usize = 0x18;
 pub const USR_DATA_OFFSET: usize = 0x20;
+
+pub const TSS_OFFSET:  usize = 0x30;

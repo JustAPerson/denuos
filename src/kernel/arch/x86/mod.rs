@@ -6,6 +6,7 @@ pub mod gdt;
 pub mod multiboot;
 pub mod paging;
 pub mod pic;
+pub mod tss;
 
 use self::multiboot::MultibootTags;
 use self::frame_allocator::{MemRegion, frame_alloc, get_fallocator};
@@ -39,5 +40,6 @@ pub unsafe extern fn kstart(multiboot_tags: &MultibootTags) {
     // set up interrupt handlers
     interrupts::initialize();
     pic::initialize();
+    tss::initialize();
     loop { }
 }

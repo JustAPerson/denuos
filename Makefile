@@ -9,16 +9,20 @@
 #
 #   debug - run QEMU paused, waiting for a GDB connection
 #   clean - remove all build objects
+#   run-verbose - run QEMU while logging interrupts
 #
 # The final product ISO file will be written to ./bin/denuos.iso
 
-.PHONY: run debug clean iso
+.PHONY: clean debug iso run run-verbose
 
 isofile := ./bin/denuos.iso
 
 QEMU ?= qemu-system-x86_64
 run: $(isofile)
 	$(QEMU) $(QEMUFLAGS) -cdrom $<
+
+run-verbose: QEMUFLAGS=-d int -no-reboot
+run-verbose: run
 
 # See ./doc/Debugging.md for more info
 debug: QEMUFLAGS += -s -S -d int -no-reboot

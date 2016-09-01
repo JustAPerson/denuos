@@ -178,8 +178,6 @@ pub mod isr {
         );
     }
 
-    // TODO FIXME panic!()/println!() in an ISR can deadlock
-
     // generic ISR
     // unfortunately it seems impossible to infer the specific interrupt number
     // for better reporting without creating a routine for each interrupt.

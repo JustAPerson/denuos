@@ -3,12 +3,9 @@ use core;
 #[lang = "eh_personality"] extern fn eh_personality() {}
 #[lang = "panic_fmt"]
 extern fn panic_fmt(fmt: core::fmt::Arguments, file: &str, line: u32) -> ! {
-    use vga::{Color, ColorCode, WRITER};
-
-    WRITER.lock().set_colorcode(ColorCode::new(Color::Red, Color::Black));
-    println!("PANIC in {} at line {}:", file, line);
-    println!("    {}", fmt);
-    loop{}
+    use vga::print_error;
+    // TODO SMP need to stop other cores
+    print_error(format_args!("PANIC in {} at line {}:\n    {}", file, line, fmt));
 }
 
 #[allow(non_snake_case)]

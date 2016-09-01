@@ -3,48 +3,51 @@
 // https://github.com/phil-opp/blog_os/blob/master/LICENSE-MIT
 // This file has been modified from its original form.
 
+//! VGA Buffer Access
+//!
+//! This module provides the ability to write characters to the screen buffer.
+
+// TODO consider moving VGA access to arch::x86 or a device driver
+
 use core::ptr::Unique;
 use core::fmt;
 use spin::Mutex;
 
-const BUFFER_HEIGHT: usize = 25;
-const BUFFER_WIDTH: usize = 80;
+/// The number of rows of text
+pub const BUFFER_HEIGHT: usize = 25;
+/// The number of columns per row of text
+pub const BUFFER_WIDTH: usize = 80;
 
-pub static WRITER: Mutex<Writer> = Mutex::new(Writer {
-    col: 0,
-    row: 0,
-    color_code: ColorCode::new(Color::White, Color::Black),
-    buffer: unsafe { Unique::new(0xb8000 as *mut _) },
-});
+static mut BUFFER: VgaBuffer = unsafe { VgaBuffer::new() };
 
-macro_rules! println {
-    ($fmt:expr) => (print!(concat!($fmt, "\n")));
-    ($fmt:expr, $($arg:tt)*) => (print!(concat!($fmt, "\n"), $($arg)*));
+/// Safe wrapper around the screen buffer
+pub struct VgaBuffer {
+    writer: Mutex<Writer>,
 }
 
-macro_rules! print {
-    ($($arg:tt)*) => ({
-        use core::fmt::Write;
-        $crate::vga::WRITER.lock().write_fmt(format_args!($($arg)*)).unwrap();
-    });
+struct Writer {
+    col: usize,
+    row: usize,
+    color_code: ColorCode,
+    buffer: Unique<Buffer>,
 }
 
-pub fn clear_screen() {
-    WRITER.lock().clear();
+struct Buffer {
+    chars: [[ScreenChar; BUFFER_WIDTH]; BUFFER_HEIGHT],
 }
 
-pub fn print_error(fmt: fmt::Arguments) {
-    use core::fmt::Write;
-
-    let mut writer = WRITER.lock();
-    let old_colorcode = writer.get_colorcode();
-
-    writer.set_colorcode(ColorCode::new(Color::Red, Color::Black));
-    let _ = writer.write_fmt(fmt);
-    writer.set_colorcode(old_colorcode);
+#[derive(Clone, Copy)]
+#[repr(C)]
+struct ScreenChar {
+    ascii_character: u8,
+    color_code: ColorCode,
 }
 
+/// Wrapper around a packed foreground / background pair
+#[derive(Clone, Copy)]
+pub struct ColorCode(u8);
 
+/// The various foreground and background text colors
 #[allow(dead_code)]
 #[repr(u8)]
 pub enum Color {
@@ -66,18 +69,40 @@ pub enum Color {
     White = 15,
 }
 
-pub struct Writer {
-    col: usize,
-    row: usize,
-    color_code: ColorCode,
-    buffer: Unique<Buffer>,
+impl VgaBuffer {
+    /// Creates a new wrapper around the buffer
+    const unsafe fn new() -> VgaBuffer {
+        VgaBuffer {
+            writer: Mutex::new(Writer {
+                col: 0,
+                row: 0,
+                color_code: ColorCode::new(Color::White, Color::Black),
+                buffer: Unique::new(0xb8000 as *mut _),
+            }),
+        }
+    }
+
+    /// Sets the color code to use when drawing to screen
+    pub fn set_colorcode(&self, color_code: ColorCode) {
+        self.writer.lock().color_code = color_code
+    }
+
+    /// Returns the current color code
+    pub fn get_colorcode(&self) -> ColorCode {
+        self.writer.lock().color_code
+    }
+
+    /// Clears the entire screen
+    pub fn clear(&self) {
+        self.writer.lock().clear();
+    }
 }
 
-/// Writes bytes to Buffer
-///
-/// This grows from top down.
 impl Writer {
-    pub fn write_byte(&mut self, byte: u8) {
+    /// Writes bytes to buffer
+    ///
+    /// This grows from top down.
+    fn write_byte(&mut self, byte: u8) {
         match byte {
             b'\n' => self.new_line(),
             byte => {
@@ -97,6 +122,7 @@ impl Writer {
         unsafe { self.buffer.get_mut() }
     }
 
+    /// Moves all lines up one row and clears the last line
     fn new_line(&mut self) {
         const LAST_ROW: usize = BUFFER_HEIGHT - 1;
 
@@ -113,6 +139,7 @@ impl Writer {
         self.col = 0;
     }
 
+    /// Writes '\x20' for every column in the specified row
     fn clear_row(&mut self, row: usize) {
         let blank = ScreenChar {
             ascii_character: b' ',
@@ -121,49 +148,60 @@ impl Writer {
         self.buffer().chars[row] = [blank; BUFFER_WIDTH];
     }
 
-    pub fn clear(&mut self) {
+    /// Clear the contents of the entire screen buffer
+    fn clear(&mut self) {
         for i in 0..BUFFER_HEIGHT {
-            // loop to avoid blowing stack
             self.clear_row(i)
         }
         self.col = 0;
         self.row = 0;
     }
-
-    pub fn set_colorcode(&mut self, color_code: ColorCode) {
-        self.color_code = color_code
-    }
-
-    pub fn get_colorcode(&self) -> ColorCode {
-        self.color_code
-    }
 }
 
-impl fmt::Write for Writer {
-    fn write_str(&mut self, s: &str) -> ::core::fmt::Result {
+impl fmt::Write for VgaBuffer {
+    fn write_str(&mut self, s: &str) -> fmt::Result {
+        let mut writer = self.writer.lock();
         for byte in s.bytes() {
-            self.write_byte(byte)
+            writer.write_byte(byte)
         }
         Ok(())
     }
 }
 
-#[derive(Clone, Copy)]
-pub struct ColorCode(u8);
+/// Safely returns mutable access to the global VgaBuffer
+///
+/// This is safe because all actual contents of struct are protected
+/// by a mutex. However, we cannot implement the Write trait without
+/// a mutable reference to the exterior struct.
+pub fn get_vgabuffer<'a>() -> &'a mut VgaBuffer {
+    unsafe { &mut BUFFER }
+}
+
+/// Prints a message in red text then stops execution
+pub fn print_error(fmt: fmt::Arguments) -> ! {
+    use core::fmt::Write;
+    use arch::intrinsics;
+    let vgabuffer = get_vgabuffer();
+    vgabuffer.set_colorcode(ColorCode::new(Color::Red, Color::Black));
+    let _ = vgabuffer.write_fmt(fmt);
+    intrinsics::halt();
+}
 
 impl ColorCode {
+    /// Creates a new ColorCode from the specified colors
     pub const fn new(foreground: Color, background: Color) -> ColorCode {
         ColorCode((background as u8) << 4 | (foreground as u8))
     }
 }
 
-#[derive(Clone, Copy)]
-#[repr(C)]
-struct ScreenChar {
-    ascii_character: u8,
-    color_code: ColorCode,
+macro_rules! println {
+    ($fmt:expr) => (print!(concat!($fmt, "\n")));
+    ($fmt:expr, $($arg:tt)*) => (print!(concat!($fmt, "\n"), $($arg)*));
 }
 
-struct Buffer {
-    chars: [[ScreenChar; BUFFER_WIDTH]; BUFFER_HEIGHT],
+macro_rules! print {
+    ($($arg:tt)*) => ({
+        use core::fmt::Write;
+        $crate::vga::get_vgabuffer().write_fmt(format_args!($($arg)*)).unwrap();
+    });
 }

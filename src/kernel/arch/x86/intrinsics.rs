@@ -41,3 +41,13 @@ pub fn stmsr(register: u32, offset: usize) {
     let value = rdmsr(register);
     wrmsr(register, value | (1 << offset));
 }
+
+/// Halts execution permanently for this core
+///
+/// This disables interrupts then blocks indefinitely on the next interrupt.
+/// This may be interrupted by NMIs, hence the loop.
+#[inline(always)]
+pub fn halt() -> ! {
+    unsafe { asm!("0: cli; hlt; jmp 0b") }
+    loop { } // compiler hint about divergence
+}

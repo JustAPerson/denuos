@@ -145,7 +145,7 @@ impl<L: NextPageLevel> PageTable<L> {
 
 pub unsafe fn initialize() -> PT4 {
     let mut pt4 = PT4::new();
-    pt4.map_to_1g(0, 0, NONE);
+    pt4.map_to_1g(0, 0, USER | WRITE);
 
     // map heap
     for i in 0..HEAP_SIZE / PAGE_SIZE {

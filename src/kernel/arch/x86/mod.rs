@@ -6,6 +6,7 @@ pub mod gdt;
 pub mod multiboot;
 pub mod paging;
 pub mod pic;
+pub mod syscall;
 pub mod tss;
 
 use self::multiboot::MultibootTags;
@@ -41,5 +42,18 @@ pub unsafe extern fn kstart(multiboot_tags: &MultibootTags) {
     interrupts::initialize();
     pic::initialize();
     tss::initialize();
+    syscall::initialize();
+    enter_userspace();
+}
+
+pub fn enter_userspace() {
+    // TODO map a stack at 0x8000_0000_0000
+    syscall::sysret(userspace as usize, 0x200000);
+}
+
+pub fn userspace() {
+    for i in 0..5 {
+        unsafe { asm!("syscall") }
+    }
     loop { }
 }

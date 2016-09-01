@@ -102,6 +102,14 @@ pub fn initialize() {
     idt.register_isr(0x08, isr::double_fault);
     idt.register_isr(0x0d, isr::general_protection_fault);
     idt.register_isr(0x0e, isr::page_fault);
+
+    // register special emergency interrupts
+    idt.register_isr(0x02, isr::nmi);
+    idt.register_isr(0x12, isr::mce);
+    // load rsp with ist1 from TSS. See boot/boot32.s
+    idt.table[0x02].options |= 1;
+    idt.table[0x12].options |= 1;
+
     idt.load();
 }
 
@@ -183,4 +191,8 @@ pub mod isr {
     panic_isr!(double_fault, "double fault");
     panic_isr!(general_protection_fault, "general protection fault");
     panic_isr!(page_fault, "page fault");
+
+    // Non maskable interrupts, machine check exceptions
+    panic_isr!(nmi, "non maskable interrupt");
+    panic_isr!(mce, "machine check exception");
 }

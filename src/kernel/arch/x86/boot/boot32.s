@@ -218,7 +218,7 @@ tss:
     dq 0         ;rsp1
     dq 0         ;rsp2
     dq 0         ; reserved
-    dq 0         ; ist1
+    dq nmi_stack ; ist1
     dq 0         ; ist2
     dq 0         ; ist3
     dq 0         ; ist4
@@ -236,6 +236,9 @@ section .bss
 stack_bottom:
     resb 4096
 stack_top:
+; reserve extra space to handle non-maskable interrupts
+    resb 4096
+nmi_stack:
 
 ; Allocate space for page tables
 common p4_table 4096:4096 ; 4KiB space with 4KiB alignment

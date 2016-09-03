@@ -18,6 +18,12 @@ pub const PAGE_SIZE: usize = 4096;
 /// Defines a the first and last byte of a region
 pub type MemRegion = (usize, usize);
 
+/// Regions of physical memory which cannot be allocated
+///
+/// This is intended to reserve physical memory from the kernel image and
+/// multiboot info structure. The relevant values must be supplied at run time.
+pub type ProtectedRegions = [MemRegion; 2];
+
 /// A simplistic frame allocator that provides access to a supply of
 /// unique frames.
 ///
@@ -26,7 +32,7 @@ pub type MemRegion = (usize, usize);
 pub struct FrameAllocator {
     start: usize,
     end:   usize,
-    protected_regions: &'static [MemRegion],
+    protected_regions: ProtectedRegions,
 }
 
 /// A unique reference to a physical memory page.
@@ -37,7 +43,7 @@ pub struct Frame {
 
 impl FrameAllocator {
     pub fn new(mem_regions: &'static [MMapEntry],
-               protected_regions: &'static [MemRegion]) -> FrameAllocator {
+               protected_regions: ProtectedRegions) -> FrameAllocator {
         let free_region = mem_regions.iter().filter(|r| r.is_free())
                                      .max_by_key(|r| r.size())
                                      .expect("No usable memory");
@@ -54,7 +60,7 @@ impl FrameAllocator {
     pub fn alloc(&mut self) -> Frame {
         'verify_frame: loop {
             let next_page = self.next_page().expect("Out of memory");
-            for region in self.protected_regions {
+            for region in &self.protected_regions {
                 let start = Frame::containing(region.0);
                 let end   = Frame::containing(region.1);
 
@@ -129,7 +135,7 @@ impl Frame {
 pub static mut FALLOCATOR: Option<Mutex<FrameAllocator>> = None;
 
 pub unsafe fn initialize(mem_regions: &'static [MMapEntry],
-                         protected_regions: &'static [MemRegion]) {
+                         protected_regions: ProtectedRegions) {
     let fallocator = FrameAllocator::new(mem_regions, protected_regions);
     core::mem::replace(&mut FALLOCATOR, Some(Mutex::new(fallocator)));
 }

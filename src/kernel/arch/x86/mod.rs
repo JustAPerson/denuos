@@ -6,6 +6,7 @@ pub mod gdt;
 pub mod multiboot;
 pub mod paging;
 pub mod pic;
+pub mod stacks;
 pub mod syscall;
 pub mod tss;
 

@@ -203,34 +203,12 @@ GDT:
     dw $ - GDT - 1
     dq GDT
 
-global tss
-tss:
-    dd 0         ; reserved
-    dq stack_top ; rsp0
-    dq 0         ;rsp1
-    dq 0         ;rsp2
-    dq 0         ; reserved
-    dq nmi_stack ; ist1
-    dq 0         ; ist2
-    dq 0         ; ist3
-    dq 0         ; ist4
-    dq 0         ; ist5
-    dq 0         ; ist6
-    dq 0         ; ist7
-    dq 0         ; reserved
-    dw 0         ; reserved
-    dw 0         ; iomap offset
-.size: equ $ - tss
-
 ; Allocate space for the stack
 ; Necessary since we don't know the memory map yet
 section .bss
 stack_bottom:
     resb 4096
 stack_top:
-; reserve extra space to handle non-maskable interrupts
-    resb 4096
-nmi_stack:
 
 ; Allocate space for page tables
 common p4_table 4096:4096 ; 4KiB space with 4KiB alignment

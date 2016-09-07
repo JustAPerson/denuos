@@ -11,20 +11,13 @@
 //! switching, but that's deprecated in AMD64.
 
 use super::gdt::{GDT, TSS_OFFSET};
-extern {
-    // defined in boot/boot32.rs
-    static tss: Tss;
-}
+use super::stacks::{DEFAULT, NMI};
 
 /// A wrapper around a Task State Segment
-// Unused for now, likely unnecessary to modify
-// But here it is for future reference
-#[repr(C, packed)]
-struct Tss {
+#[allow(dead_code)]
+#[repr(packed)]
+pub struct Tss {
     _reserved0: u32,
-    // The only relevant field of the TSS is rsp0, which is used to load
-    // the kernel stack when transitioning from ring3 -> ring0. rsp0 reuses
-    // the same stack (symbol stack_top in boot/boot32.s) as kstart.
     rsp0:       usize,
     rsp1:       usize,
     rsp2:       usize,
@@ -43,6 +36,26 @@ struct Tss {
     io_map:     u16,
 }
 
+pub static mut TSS: Tss = Tss {
+    _reserved0: 0,
+    rsp0:       0,
+    rsp1:       0,
+    rsp2:       0,
+    _reserved1: 0,
+    _reserved2: 0,
+    ist1:       0,
+    ist2:       0,
+    ist3:       0,
+    ist4:       0,
+    ist5:       0,
+    ist6:       0,
+    ist7:       0,
+    _reserved3: 0,
+    _reserved4: 0,
+    _reserved5: 0,
+    io_map:     0,
+};
+
 /// Initializes the TSS and TR
 ///
 /// Necessary to re-enter ring0
@@ -52,7 +65,10 @@ pub fn initialize() {
     // we initialize the multi-part address fields here since we can't
     // manipulate the tss ptr before linking.
     unsafe {
-        let tss_ptr = &tss as *const _ as usize;
+        TSS.rsp0 = DEFAULT.top();
+        TSS.ist1 = NMI.top();
+
+        let tss_ptr = &TSS as *const _ as usize;
         GDT[6] |= (tss_ptr & 0x00ffffff) << 16; // 39:16
         GDT[6] |= (tss_ptr & 0xff000000) << 32; // 63:56
         GDT[7] = tss_ptr >> 32; // 95:64

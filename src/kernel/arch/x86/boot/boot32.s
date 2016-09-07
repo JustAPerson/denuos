@@ -109,31 +109,25 @@ check_long_mode:
     mov al, "2"
     jmp error
 
+    ; setup simultaneous -2GB through +2GB mapping
+    ; necessary because this assembly code is linked at 0x100000
+    ; but the rust code is mapped at 0xffffffff80100000
 set_up_page_tables:
-    ; map first P4 entry to P3 table
+    ; point two level 4 entries to a single level 3 table
     mov eax, p3_table
     or eax, 0b11 ; present + writable
     mov [p4_table], eax
+    mov [p4_table + 511*8], eax
 
-    ; map first P3 entry to P2 table
-    mov eax, p2_table
-    or eax, 0b11 ; present + writable
-    mov [p3_table], eax
-
-    ; map each P2 entry to a huge 2MiB page
-    mov ecx, 0         ; counter variable
-
-.map_p2_table:
-    ; map ecx-th P2 entry to a huge page that starts at address 2MiB*ecx
-    mov eax, 0x200000  ; 2MiB
-    mul ecx            ; start address of ecx-th page
-    or eax, 0b10000011 ; present + writable + huge
-    mov [p2_table + ecx * 8], eax ; map ecx-th entry
-
-    inc ecx            ; increase counter
-    cmp ecx, 512       ; if counter == 512, the whole P2 table is mapped
-    jne .map_p2_table  ; else map the next entry
-
+    ; Because two entries in level 4 table point to this table,
+    ; there are 4 extraneous mappings. The comments below describe
+    ; the intended / useful mappings
+    mov eax, 0x83 ; 1GB mapping to address 0x00000000
+    mov [p3_table +   0*8], eax ; 0x00000000 -> 0x00000000
+    mov [p3_table + 510*8], eax ; 0xffffffff80000000 -> 0x00000000
+    add eax, 1<<30 ; 1GB mapping to address 0x40000000
+    mov [p3_table +   1*8], eax ; 0x40000000 -> 0x40000000
+    mov [p3_table + 511*8], eax ; 0xffffffffc0000000 -> 0x40000000
     ret
 
 enable_paging:
@@ -211,6 +205,6 @@ stack_bottom:
 stack_top:
 
 ; Allocate space for page tables
-common p4_table 4096:4096 ; 4KiB space with 4KiB alignment
-common p3_table 4096:4096
-common p2_table 4096:4096
+align 4096
+p4_table: resb 4096
+p3_table: resb 4096

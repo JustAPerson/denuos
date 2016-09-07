@@ -13,10 +13,14 @@ use core::ptr::Unique;
 use core::fmt;
 use spin::Mutex;
 
+use arch::x86::KERNEL_BASE;
+
 /// The number of rows of text
 pub const BUFFER_HEIGHT: usize = 25;
 /// The number of columns per row of text
 pub const BUFFER_WIDTH: usize = 80;
+/// The address of the VGA buffer
+pub const BUFFER_ADDR: usize = KERNEL_BASE + 0xb8000;
 
 static mut BUFFER: VgaBuffer = unsafe { VgaBuffer::new() };
 
@@ -77,7 +81,7 @@ impl VgaBuffer {
                 col: 0,
                 row: 0,
                 color_code: ColorCode::new(Color::White, Color::Black),
-                buffer: Unique::new(0xb8000 as *mut _),
+                buffer: Unique::new(BUFFER_ADDR as *mut _),
             }),
         }
     }

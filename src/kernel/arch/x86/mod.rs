@@ -10,6 +10,8 @@ pub mod stacks;
 pub mod syscall;
 pub mod tss;
 
+pub const KERNEL_BASE: usize = 0xffffffff80000000;
+
 use self::multiboot::MultibootTags;
 use self::frame_allocator::{frame_alloc, get_fallocator};
 
@@ -20,7 +22,7 @@ pub unsafe extern fn kstart(multiboot_tags: &MultibootTags) {
     // protect some memory regions from frame allocator
     let elf_sections = multiboot_info.elf_sections.unwrap();
     let mut protected_regions = [
-        (elf_sections.image_start(), elf_sections.image_end()),
+        (elf_sections.image_start(), elf_sections.image_end() - KERNEL_BASE),
         (multiboot_tags.start(), multiboot_tags.end()),
     ];
 
@@ -47,7 +49,7 @@ pub unsafe extern fn kstart(multiboot_tags: &MultibootTags) {
 
 pub fn enter_userspace() {
     // TODO map a stack at 0x8000_0000_0000
-    syscall::sysret(userspace as usize, 0x200000);
+    syscall::sysret(userspace as usize, KERNEL_BASE + 0x200000);
 }
 
 pub fn userspace() {

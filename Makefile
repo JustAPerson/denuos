@@ -47,6 +47,7 @@ target := x86_64-unknown-linux-gnu
 kernel_cargo := ./bin/cargo/kernel
 kernelobj := $(kernel_cargo)/$(target)/debug/libkernel.a
 $(kernelobj): export CARGO_TARGET_DIR := $(abspath $(kernel_cargo))
+$(kernelobj): export RUSTFLAGS+=-C no-redzone
 $(kernelobj): .FORCE | ./bin/cargo
 	cd src/kernel/ && cargo build --target $(target)
 

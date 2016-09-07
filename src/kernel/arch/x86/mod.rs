@@ -38,6 +38,7 @@ pub unsafe extern fn kstart(multiboot_tags: &MultibootTags) {
     // set up interrupt handlers
     interrupts::initialize();
     pic::initialize();
+    gdt::initialize();
     tss::initialize();
     syscall::initialize();
     enter_userspace();

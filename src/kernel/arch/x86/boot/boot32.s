@@ -181,13 +181,11 @@ enable_sse:
     jmp error
 
 %xdefine SYS     0 << 45
-%xdefine USR     3 << 45
 %xdefine CODE    3 << 43
 %xdefine DATA    2 << 43
 %xdefine LONG    1 << 53
 %xdefine PRESENT 1 << 47
 %xdefine WRITE   1 << 41
-%xdefine TSS     9 << 40
 
 section .data
 
@@ -201,12 +199,6 @@ GDT:
 .data: equ $ - GDT
     dq SYS | DATA | PRESENT | WRITE
 ; userpsace segments
-    dq USR | CODE | PRESENT
-    dq USR | DATA | PRESENT | WRITE
-    dq USR | CODE | PRESENT | LONG
-; task state segment (16 bytes)
-    dq TSS | PRESENT | tss.size
-    dq 0
 .pointer:
     dw $ - GDT - 1
     dq GDT

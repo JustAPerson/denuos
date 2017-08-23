@@ -168,16 +168,16 @@ pub struct PT4 {
 impl PT4 {
     pub fn new() -> PT4 {
         PT4 {
-            table: unsafe { core::ptr::Unique::new(PageTable::new()) },
+            table: unsafe { core::ptr::Unique::new_unchecked(PageTable::new()) },
         }
     }
 
     fn get(&self) -> &PageTable<Level4> {
-        unsafe { self.table.get() }
+        unsafe { self.table.as_ref() }
     }
 
     fn get_mut(&mut self) -> &mut PageTable<Level4> {
-        unsafe { self.table.get_mut() }
+        unsafe { self.table.as_mut() }
     }
 
     pub fn map_4k(&mut self, vaddr: usize, flags: PageFlags) {

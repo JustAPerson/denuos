@@ -1,11 +1,13 @@
 use core;
 
 #[lang = "eh_personality"] extern fn eh_personality() {}
+
 #[lang = "panic_fmt"]
-extern fn panic_fmt(fmt: core::fmt::Arguments, file: &str, line: u32) -> ! {
+#[no_mangle]
+pub extern fn rust_begin_unwind(fmt: core::fmt::Arguments, file: &str, line: u32, column: u32) -> ! {
     use vga::print_error;
     // TODO SMP need to stop other cores
-    print_error(format_args!("PANIC in {} at line {}:\n    {}", file, line, fmt));
+    print_error(format_args!("PANIC in {}:{}:{}\n    {}", file, line, column, fmt));
 }
 
 #[allow(non_snake_case)]

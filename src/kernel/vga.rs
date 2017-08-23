@@ -81,7 +81,7 @@ impl VgaBuffer {
                 col: 0,
                 row: 0,
                 color_code: ColorCode::new(Color::White, Color::Black),
-                buffer: Unique::new(BUFFER_ADDR as *mut _),
+                buffer: Unique::new_unchecked(BUFFER_ADDR as *mut _),
             }),
         }
     }
@@ -123,7 +123,7 @@ impl Writer {
     }
 
     fn buffer(&mut self) -> &mut Buffer {
-        unsafe { self.buffer.get_mut() }
+        unsafe { self.buffer.as_mut() }
     }
 
     /// Moves all lines up one row and clears the last line

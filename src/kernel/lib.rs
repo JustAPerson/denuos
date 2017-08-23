@@ -1,8 +1,6 @@
 #![feature(alloc)]
 #![feature(asm)]
-#![feature(associated_consts)]
 #![feature(box_syntax)]
-#![feature(collections)]
 #![feature(const_fn)]
 #![feature(lang_items)]
 #![feature(naked_functions)]
@@ -12,8 +10,6 @@
 extern crate alloc;
 #[macro_use]
 extern crate bitflags;
-#[macro_use]
-extern crate collections;
 extern crate kalloc;
 extern crate rlibc;
 extern crate spin;

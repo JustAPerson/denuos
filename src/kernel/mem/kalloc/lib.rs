@@ -2,20 +2,27 @@
 //!
 //! Currently implemented using a simplistic bump allocator. Freed memory is
 //! just leaked.
-#![feature(allocator)]
 #![feature(const_fn)]
+#![feature(allocator_internals)]
+#![feature(global_allocator)]
+#![feature(alloc)]
+#![feature(allocator_api)]
 
-#![allocator]
+#![default_lib_allocator]
 #![no_std]
 
 extern crate spin;
+extern crate alloc;
 
 use spin::Mutex;
 
 pub const HEAP_SIZE:  usize = 1024 * 1024; // 1MiB
 pub const HEAP_START: usize = 0xffff_e000_0000_0000;
 
-static ALLOCATOR: Mutex<BumpAllocator> = Mutex::new(BumpAllocator::new(HEAP_START, HEAP_SIZE));
+fn align_up(start: usize, align: usize) -> usize {
+    let mask = align - 1;
+    (start + mask) & !mask
+}
 
 struct BumpAllocator {
     next: usize,
@@ -43,45 +50,28 @@ impl BumpAllocator {
     }
 }
 
-fn align_up(start: usize, align: usize) -> usize {
-    let mask = align - 1;
-    (start + mask) & !mask
+use alloc::allocator::{Alloc, Layout, AllocErr};
+struct GlobalAllocator {
+    allocator: Mutex<BumpAllocator>,
+}
+impl GlobalAllocator {
+    const fn new() -> GlobalAllocator {
+        GlobalAllocator {
+            allocator: Mutex::new(BumpAllocator::new(HEAP_START, HEAP_SIZE)),
+        }
+    }
 }
 
-#[no_mangle]
-pub extern fn __rust_allocate(size: usize, align: usize) -> *mut u8 {
-    ALLOCATOR.lock().allocate(size, align).expect("Out of heap memory")
+unsafe impl<'a> Alloc for &'a GlobalAllocator {
+    unsafe fn alloc(&mut self, layout: Layout) -> Result<*mut u8, AllocErr> {
+        let mut allocator = self.allocator.lock();
+        let ptr = allocator.allocate(layout.size(), layout.align());
+        Ok(ptr.expect("Out of heap memory"))
+    }
+    unsafe fn dealloc(&mut self, _ptr: *mut u8, _layout: Layout) {
+        // leak memory for time being
+    }
 }
 
-#[no_mangle]
-pub extern fn __rust_reallocate(ptr: *mut u8, size: usize, new_size: usize,
-                                align: usize) -> *mut u8 {
-    // taken from rust's liballoc_system
-    use core::{ptr, cmp};
-    let new_ptr = __rust_allocate(new_size, align);
-    unsafe { ptr::copy(ptr, new_ptr, cmp::min(size, new_size)) };
-    __rust_deallocate(ptr, size, align);
-    new_ptr
-}
-
-
-#[allow(unused_variables)]
-#[no_mangle]
-pub extern fn __rust_deallocate(ptr: *mut u8, size: usize, align: usize) {
-    // leaking mem is fine
-}
-
-#[allow(unused_variables)]
-#[no_mangle]
-pub extern fn __rust_usable_size(size: usize, align: usize) -> usize {
-    // Don't allocate more than necessary
-    size
-}
-
-#[allow(unused_variables)]
-#[no_mangle]
-pub extern fn __rust_reallocate_inplace(ptr: *mut u8, size: usize,
-                                        new_size: usize, align: usize) -> usize {
-    // Cannot realloc in place
-    size
-}
+#[global_allocator]
+static ALLOCATOR: GlobalAllocator = GlobalAllocator::new();

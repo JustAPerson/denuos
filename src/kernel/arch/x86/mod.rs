@@ -21,7 +21,7 @@ pub unsafe extern fn kstart(multiboot_tags: &MultibootTags) {
 
     // protect some memory regions from frame allocator
     let elf_sections = multiboot_info.elf_sections.unwrap();
-    let mut protected_regions = [
+    let protected_regions = [
         (elf_sections.image_start(), elf_sections.image_end() - KERNEL_BASE),
         (multiboot_tags.start(), multiboot_tags.end()),
     ];
@@ -53,7 +53,7 @@ pub fn enter_userspace() {
 }
 
 pub fn userspace() {
-    for i in 0..5 {
+    for _ in 0..5 {
         unsafe { asm!("syscall") }
     }
     loop { }

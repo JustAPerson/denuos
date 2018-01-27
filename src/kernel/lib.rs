@@ -5,6 +5,7 @@
 #![feature(lang_items)]
 #![feature(naked_functions)]
 #![feature(unique)]
+#![feature(ptr_internals)]
 #![no_std]
 
 extern crate alloc;

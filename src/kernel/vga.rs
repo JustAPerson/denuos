@@ -113,7 +113,8 @@ impl Writer {
                 if self.col >= BUFFER_WIDTH {
                     self.new_line();
                 }
-                self.buffer().chars[self.row][self.col] = ScreenChar {
+                let (r, c) = (self.row, self.col);
+                self.buffer().chars[r][c] = ScreenChar {
                     ascii_character: byte,
                     color_code: self.color_code,
                 };

@@ -8,7 +8,6 @@
 #![feature(alloc)]
 #![feature(allocator_api)]
 
-#![default_lib_allocator]
 #![no_std]
 
 extern crate spin;

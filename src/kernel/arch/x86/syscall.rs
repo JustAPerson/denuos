@@ -45,54 +45,132 @@ pub fn initialize() {
     stmsr(0xC0000080, 0); // set the SCE bit
 }
 
-/// The function called in kernelspace by `syscall`
-// TODO document stack layout
-// TODO FIXME preserve registers correctly
-#[naked]
-unsafe fn syscall_enter() {
-    fn action() {
-        println!("syscall'd");
-    }
-    asm! {"
-        push rcx
-        push r11
-        call $0
-        pop r11
-        pop rcx
-        sysret
-        " :: "i"(action as usize) :: "intel"
-    }
+#[repr(packed)]
+#[derive(Default)]
+pub struct Registers {
+    pub rax: u64,
+    pub rbx: u64,
+    pub rcx: u64,
+    pub rdx: u64,
+    pub rsi: u64,
+    pub rdi: u64,
+    pub rbp: u64,
+    pub r8: u64,
+    pub r9: u64,
+    pub r10: u64,
+    pub r11: u64,
+    pub r12: u64,
+    pub r13: u64,
+    pub r14: u64,
+    pub r15: u64,
+    pub cs: u16,
+    pub ss: u16,
+    pub ds: u16,
+    pub es: u16,
+    pub fs: u16,
+    pub gs: u16,
+    _pad:   u32, // 12 bytes of selectors would otherwise unalign the following
+    pub rip:    u64,
+    pub rflags: u64,
+    pub rsp:    u64,
 }
 
-/// Performs the intial entry to userspace
-///
-/// # Initial State
-/// | register                  | value              |
-/// |---------------------------|--------------------|
-/// | `rax`, `rbx`, `rdx`, `rdi`, `rsi`, `rbp`, `r8`, `r9`, `r10`, `r12`, `r13`, `r14`, `r15`| 0 |
-/// | `rflags`, `r11`           | `SYSRET_RFLAGS`    |
-/// | `rip`, `rcx`              | `target` parameter |
-/// | `rsp`                     | `stack` parameter  |
+/// The function called in kernelspace by `syscall`
 #[naked]
+unsafe fn syscall_enter() {
+    fn action(regs: &mut Registers) {
+        println!("syscall'd");
+    }
+    asm!("
+    pushq %rsp
+    pushq %r11
+    pushq %rcx
+    sub $$16, %rsp  // skip the 4 bytes of padding
+    movw %gs, 10(%rsp)
+    movw %fs,  8(%rsp)
+    movw %es,  6(%rsp)
+    movw %ds,  4(%rsp)
+    movw %ss,  2(%rsp)
+    movw %cs,  0(%rsp)
+    pushq %r15
+    pushq %r14
+    pushq %r13
+    pushq %r12
+    pushq %r11
+    pushq %r10
+    pushq %r9
+    pushq %r8
+    pushq %rbp
+    pushq %rdi
+    pushq %rsi
+    pushq %rdx
+    pushq %rcx
+    pushq %rbx
+    pushq %rax
+    movq %rsp, %rdi // pass register state to function
+    callq ${0:c}
+    popq %rax
+    popq %rbx
+    popq %rcx
+    popq %rdx
+    popq %rsi
+    popq %rdi
+    popq %rbp
+    popq %r8
+    popq %r9
+    popq %r10
+    popq %r11
+    popq %r12
+    popq %r13
+    popq %r14
+    popq %r15
+    // don't write cs/ss because sysret sets them
+    movw  4(%rsp), %ds
+    movw  6(%rsp), %es
+    movw  8(%rsp), %fs
+    movw 10(%rsp), %gs
+    add $$16, %rsp  // skip the 4 bytes of padding
+    popq %rcx
+    popq %r11
+    popq %rsp
+    sysretq
+    " :: "s"(action as u64))
+}
+
 pub fn sysret(target: usize, stack: usize) -> ! {
+    let mut registers = Registers::default();
+    registers.rflags = SYSRET_RFLAGS as u64;
+    registers.rip = target as u64;
+    registers.rsp = stack as u64;
+
     unsafe {
-        asm! {"
-            xor rax, rax
-            xor rbx, rbx
-            xor rdx, rdx
-            xor rdi, rdi
-            xor rsi, rsi
-            xor rbp, rbp
-            xor r8, r8
-            xor r9, r9
-            xor r10, r10
-            xor r12, r12
-            xor r13, r13
-            xor r14, r14
-            xor r15, r15
-            sysret
-            " :: "{rcx}"(target),"{rsp}"(stack),"{r11}"(SYSRET_RFLAGS) :: "intel"
-        }
+        asm! ("
+        popq %rax
+        popq %rbx
+        popq %rcx
+        popq %rdx
+        popq %rsi
+        popq %rdi
+        popq %rbp
+        popq %r8
+        popq %r9
+        popq %r10
+        popq %r11
+        popq %r12
+        popq %r13
+        popq %r14
+        popq %r15
+        // don't write cs/ss because sysret sets them
+        movw  4(%rsp), %ds
+        movw  6(%rsp), %es
+        movw  8(%rsp), %fs
+        movw 10(%rsp), %gs
+        add $$16, %rsp  // skip the 4 bytes of padding
+        popq %rcx
+        popq %r11
+        popq %rsp
+        sysretq
+        " :: "{rsp}"(&registers)::"volatile")
     }
     loop { } // hint about diverging
 }

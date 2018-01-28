@@ -120,6 +120,25 @@ pub fn disable() {
 
 #[repr(packed)]
 pub struct InterruptState {
+    pub rax: u64,
+    pub rbx: u64,
+    pub rcx: u64,
+    pub rdx: u64,
+    pub rsi: u64,
+    pub rdi: u64,
+    pub rbp: u64,
+    pub r8: u64,
+    pub r9: u64,
+    pub r10: u64,
+    pub r11: u64,
+    pub r12: u64,
+    pub r13: u64,
+    pub r14: u64,
+    pub r15: u64,
+    pub ds: u16,
+    pub es: u16,
+    pub fs: u16,
+    pub gs: u16,
     pub error:  u32,
     pub vector: u32,
     pub rip:    u64,
@@ -155,9 +174,48 @@ pub mod isr {
             // TODO reconsider pushing segments if we use %gs
             asm!("
             movl $0, 4(%rsp) // set vector
+            sub $$8, %rsp
+            movw %gs, 6(%rsp)
+            movw %fs, 4(%rsp)
+            movw %es, 2(%rsp)
+            movw %ds, 0(%rsp)
+            pushq %r15
+            pushq %r14
+            pushq %r13
+            pushq %r12
+            pushq %r11
+            pushq %r10
+            pushq %r9
+            pushq %r8
+            pushq %rbp
+            pushq %rdi
+            pushq %rsi
+            pushq %rdx
+            pushq %rcx
+            pushq %rbx
+            pushq %rax
             movq %rsp, %rdi  // pass InterruptState to action
             callq ${1:c}
-            addq $$8, %rsp   // remove error code
+            popq %rax
+            popq %rbx
+            popq %rcx
+            popq %rdx
+            popq %rsi
+            popq %rdi
+            popq %rbp
+            popq %r8
+            popq %r9
+            popq %r10
+            popq %r11
+            popq %r12
+            popq %r13
+            popq %r14
+            popq %r15
+            movw 6(%rsp), %gs
+            movw 4(%rsp), %fs
+            movw 2(%rsp), %es
+            movw 0(%rsp), %ds
+            addq $$16, %rsp   // selectors and remove error code
             iretq
             " :: "n"($vector), "s"($action as u64) :: "volatile");
         }

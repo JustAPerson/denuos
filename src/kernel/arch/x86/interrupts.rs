@@ -152,6 +152,37 @@ pub struct InterruptState {
     _pad4:      u32,
 }
 
+
+use core::fmt;
+impl fmt::Debug for InterruptState {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        unsafe {
+            write!(f, "InterrutState {{\n\
+                vector 0x{:02x} error 0x{:08x}\n\
+                rip {:016x} cs {:04x}\n\
+                rsp {:016x} ss {:04x}\n\
+                rax {:016x} rbx {:016x}\n\
+                rcx {:016x} rdx {:016x}\n\
+                rsp {:016x} rbp {:016x}\n\
+                rsi {:016x} rdi {:016x}\n\
+                r8  {:016x} r9  {:016x}\n\
+                r10 {:016x} r11 {:016x}\n\
+                r12 {:016x} r13 {:016x}\n\
+                r14 {:016x} r15 {:016x}\n\
+                rflags: {:08x} fs: {:04x} gs: {:04x}\n\
+            }}",
+            self.vector, self.error,
+            self.rip, self.cs,
+            self.rsp, self.ss,
+            self.rax, self.rbx, self.rcx, self.rdx,
+            self.rsp, self.rbp, self.rsi, self.rdi,
+            self.r8 , self.r9 , self.r10, self.r11,
+            self.r12, self.r13, self.r14, self.r15,
+            self.rflags, self.fs, self.gs)
+        }
+    }
+}
+
 #[inline(always)]
 pub unsafe fn entry_error() {
 }
@@ -271,7 +302,7 @@ pub mod isr {
 
     fn isr_unknown(state: &mut InterruptState) {
         unsafe {
-            panic!("Unexpected interrupt: {:x}", state.vector)
+            panic!("Unexpected interrupt: \n{:?}", state)
         }
     }
 

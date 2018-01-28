@@ -33,9 +33,9 @@ pub static mut GDT: Gdt = [
     SYS | CODE | PRESENT | LONG,
     SYS | DATA | PRESENT | WRITE,
 
-    USR | CODE | PRESENT,
-    USR | DATA | PRESENT | WRITE,
     USR | CODE | PRESENT | LONG,
+    USR | DATA | PRESENT | WRITE,
+    USR | CODE | PRESENT,
 
     TSS | PRESENT | 104,
     0,

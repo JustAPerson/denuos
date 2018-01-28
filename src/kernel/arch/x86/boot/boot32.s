@@ -35,6 +35,8 @@ start32:
     mov ss, ax  ; stack selector
     mov ds, ax  ; data selector
     mov es, ax  ; extra selector
+    mov fs, ax
+    mov gs, ax
 
     extern start64
     jmp GDT.code:start64

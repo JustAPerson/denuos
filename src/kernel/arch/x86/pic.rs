@@ -83,9 +83,6 @@ pub fn initialize() {
     PIC2.write_data(ICW4_8086);
 
     let mut idt = interrupts::Idt::current().unwrap();
-    for i in PIC1_OFFSET..(PIC2_OFFSET + 8) {
-        idt.register_isr(i as usize, general_irq);
-    }
     idt.register_isr(0x20, system_timer);
     idt.register_isr(0x21, keyboard_input);
     idt.load();
@@ -121,18 +118,13 @@ fn send_eoi(irq: u8) {
     PIC1.write_command(EOI);
 }
 
-isr! {
-    fn general_irq() {
-        if let Some(irq) = get_irq() {
-            panic!("Received unhadled IRQ{}", irq);
-        }
-    }
-
-    fn system_timer() {
+isr_plain! {
+    0x20 => fn system_timer(state) {
+        println!("timer");
         send_eoi(0);
     }
 
-    fn keyboard_input() {
+    0x21 => fn keyboard_input(state) {
         let sc = inb(0x60);
         println!("keyboard {:#x}", sc);
         send_eoi(1);

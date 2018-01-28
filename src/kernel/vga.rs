@@ -185,7 +185,7 @@ pub fn get_vgabuffer<'a>() -> &'a mut VgaBuffer {
 /// Prints a message in red text then stops execution
 pub fn print_error(fmt: fmt::Arguments) -> ! {
     use core::fmt::Write;
-    use arch::intrinsics;
+    use arch::generic::intrinsics;
     let vgabuffer = get_vgabuffer();
     vgabuffer.set_colorcode(ColorCode::new(Color::Red, Color::Black));
     let _ = vgabuffer.write_fmt(fmt);

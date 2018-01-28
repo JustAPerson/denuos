@@ -19,11 +19,12 @@
 //! `initialize()` function. See the `sysret()` instruction to manually
 //! enter userspace.
 
-use super::gdt::{SYS_CODE_OFFSET, USR_CODE_OFFSET};
+use super::gdt::{SYS_CODE_OFFSET, USR_SYSC_OFFSET};
 use super::intrinsics::{stmsr, wrmsr};
+use super::Registers;
 
 /// Syscall Target flags
-pub const STAR: u64 = (SYS_CODE_OFFSET << 32 | USR_CODE_OFFSET << 48) as u64;
+pub const STAR: u64 = (SYS_CODE_OFFSET << 32 | USR_SYSC_OFFSET << 48) as u64;
 /// The address loaded into the `rip` register by `syscall`
 pub const LSTAR: unsafe fn() = syscall_enter;
 /// The bits of `rflags` register that should be cleared by `syscall`
@@ -43,36 +44,6 @@ pub fn initialize() {
     wrmsr(0xC0000084, SFMASK);
     // enable syscall instructions in EFER
     stmsr(0xC0000080, 0); // set the SCE bit
-}
-
-#[repr(packed)]
-#[derive(Default)]
-pub struct Registers {
-    pub rax: u64,
-    pub rbx: u64,
-    pub rcx: u64,
-    pub rdx: u64,
-    pub rsi: u64,
-    pub rdi: u64,
-    pub rbp: u64,
-    pub r8: u64,
-    pub r9: u64,
-    pub r10: u64,
-    pub r11: u64,
-    pub r12: u64,
-    pub r13: u64,
-    pub r14: u64,
-    pub r15: u64,
-    pub cs: u16,
-    pub ss: u16,
-    pub ds: u16,
-    pub es: u16,
-    pub fs: u16,
-    pub gs: u16,
-    _pad:   u32, // 12 bytes of selectors would otherwise unalign the following
-    pub rip:    u64,
-    pub rflags: u64,
-    pub rsp:    u64,
 }
 
 /// The function called in kernelspace by `syscall`
@@ -137,12 +108,7 @@ unsafe fn syscall_enter() {
     " :: "s"(action as u64))
 }
 
-pub fn sysret(target: usize, stack: usize) -> ! {
-    let mut registers = Registers::default();
-    registers.rflags = SYSRET_RFLAGS as u64;
-    registers.rip = target as u64;
-    registers.rsp = stack as u64;
-
+pub fn sysret(registers: &Registers) -> ! {
     unsafe {
         asm! ("
         popq %rax
@@ -170,7 +136,7 @@ pub fn sysret(target: usize, stack: usize) -> ! {
         popq %r11
         popq %rsp
         sysretq
-        " :: "{rsp}"(&registers)::"volatile")
+        " :: "{rsp}"(registers)::"volatile")
     }
     loop { } // hint about diverging
 }

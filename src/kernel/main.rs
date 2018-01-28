@@ -1,7 +1,10 @@
 use vga;
+use arch;
 
-#[no_mangle]
-pub extern fn kmain() {
-    vga::get_vgabuffer().clear();
-    panic!("No userspace to run!");
+/// Main architecture-independent kernel functionality
+///
+/// Called from `arch::kstart()`
+pub fn kmain() {
+    println!("kmain()");
+    loop {}
 }

@@ -1,3 +1,5 @@
+use main;
+
 pub mod frame_allocator;
 #[macro_use]
 pub mod interrupts;
@@ -44,17 +46,52 @@ pub unsafe extern fn kstart(multiboot_tags: &MultibootTags) {
     gdt::initialize();
     tss::initialize();
     syscall::initialize();
-    enter_userspace();
+
+    main::kmain();
 }
 
-pub fn enter_userspace() {
-    // TODO map a stack at 0x8000_0000_0000
-    syscall::sysret(userspace as usize, KERNEL_BASE + 0x200000);
+#[repr(packed)]
+pub struct Registers {
+    pub rax: u64,
+    pub rbx: u64,
+    pub rcx: u64,
+    pub rdx: u64,
+    pub rsi: u64,
+    pub rdi: u64,
+    pub rbp: u64,
+    pub r8: u64,
+    pub r9: u64,
+    pub r10: u64,
+    pub r11: u64,
+    pub r12: u64,
+    pub r13: u64,
+    pub r14: u64,
+    pub r15: u64,
+    pub cs: u16,
+    pub ss: u16,
+    pub ds: u16,
+    pub es: u16,
+    pub fs: u16,
+    pub gs: u16,
+    _pad:   u32, // 12 bytes of selectors would otherwise unalign the following
+    pub rip:    u64,
+    pub rflags: u64,
+    pub rsp:    u64,
 }
 
-pub fn userspace() {
-    for _ in 0..5 {
-        unsafe { asm!("syscall") }
+impl Registers {
+    fn default_user(rip: usize, rsp: usize) -> Self {
+        use self::gdt::{USR_CODE_OFFSET, USR_DATA_OFFSET};
+        Registers {
+            rip: rip as u64, cs: USR_CODE_OFFSET as u16,
+            rsp: rsp as u64, ss: USR_DATA_OFFSET as u16,
+            rflags: 0x200, // TODO standardize rflags
+            rax: 0, rbx: 0, rcx: 0, rdx: 0,
+                    rbp: 0, rsi: 0, rdi: 0,
+            r8:  0, r9:  0, r10: 0, r11: 0,
+            r12: 0, r13: 0, r14: 0, r15: 0,
+            ds:  0, es:  0, fs:  0, gs:  0,
+            _pad: 0,
+        }
     }
-    loop { }
 }

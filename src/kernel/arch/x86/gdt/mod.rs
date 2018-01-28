@@ -11,8 +11,9 @@ use self::flags::*;
 pub const SYS_CODE_OFFSET: usize = 0x08;
 pub const SYS_DATA_OFFSET: usize = 0x10;
 
-pub const USR_CODE_OFFSET: usize = 0x18;
+pub const USR_CODE_OFFSET: usize = 0x28;
 pub const USR_DATA_OFFSET: usize = 0x20;
+pub const USR_SYSC_OFFSET: usize = 0x18; // syscall is weird because it can return to either 32 or 64bit
 
 pub const TSS_OFFSET:  usize = 0x30;
 

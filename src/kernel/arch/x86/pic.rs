@@ -119,14 +119,15 @@ fn send_eoi(irq: u8) {
 }
 
 isr_plain! {
+    // TODO re-enable pic timer
     0x20 => fn system_timer(state) {
-        println!("timer");
+        // println!("timer");
         send_eoi(0);
     }
-
+    // TODO re-enable pic keyboard input
     0x21 => fn keyboard_input(state) {
-        let sc = inb(0x60);
-        println!("keyboard {:#x}", sc);
+        // let sc = inb(0x60);
+        // println!("keyboard {:#x}", sc);
         send_eoi(1);
     }
 }

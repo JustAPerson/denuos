@@ -23,23 +23,26 @@ pub unsafe extern fn kstart(multiboot_tags: &MultibootTags) {
 
     // protect some memory regions from frame allocator
     let elf_sections = multiboot_info.elf_sections.unwrap();
+    let (k_begin, k_end) = (elf_sections.image_start(), elf_sections.image_end() - KERNEL_BASE);
+    let (m_begin, m_end) = (multiboot_tags.start(), multiboot_tags.end());
     let protected_regions = [
-        (elf_sections.image_start(), elf_sections.image_end() - KERNEL_BASE),
-        (multiboot_tags.start(), multiboot_tags.end()),
+        (k_begin, k_end), // kernel image
+        (m_begin, m_end), // multiboot data
     ];
-
-    println!("kernel region {:?}", protected_regions[0]);
-    println!("multiboot region {:?}", protected_regions[1]);
-
     let mmap = multiboot_info.mem_map.unwrap();
     frame_allocator::initialize(mmap, protected_regions);
 
-    let free_pages = get_fallocator().free_pages();
+    println!("boot loader: {}", &multiboot_info.boot_loader_name.unwrap_or("none"));
+    println!("cmd line: {}", &multiboot_info.cmd_line.unwrap_or("none"));
+    println!("");
+    println!("protected memory regions");
+    println!("  kernel:    ({:#x}, {:#x}) size {} KiB", k_begin, k_end, (k_end - k_begin) / 1024);
+    println!("  multiboot: ({:#x}, {:#x}) size {} KiB", m_begin, m_end, (m_end - m_begin) / 1024);
     println!("first free page 0x{:x}", frame_alloc().addr());
+    let free_pages = get_fallocator().free_pages();
     println!("free pages {} ({} MiB)", free_pages, free_pages / 256);
 
     let _ = paging::initialize();
-
     // set up interrupt handlers
     interrupts::initialize();
     pic::initialize();

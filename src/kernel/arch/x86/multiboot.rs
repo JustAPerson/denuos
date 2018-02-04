@@ -56,15 +56,12 @@ impl MultibootTags {
                 0 => { } // End tag
                 1 => {
                     // Boot command line
-                    let s = parse_tag_str(data, data_size).expect("Non-utf8 boot command line");
-                    info.cmd_line = Some(s);
+                    info.cmd_line = parse_tag_str(data, data_size, 1);
                 }
                 2 => {
                     // Boot loader name
-                    let s = parse_tag_str(data, data_size).expect("Non-utf8 boot loader name");
-                    info.boot_loader_name = Some(s);
+                    info.boot_loader_name = parse_tag_str(data, data_size, 2);
                 }
-                3 => { } // NYI Modules
                 4 => {
                     // Basic memory info
                     let basic = &*(data as *const BasicMemInfo);
@@ -86,8 +83,6 @@ impl MultibootTags {
 
                     info.mem_map = Some(core::slice::from_raw_parts(entries, n));
                 }
-                7 => { } // VBE
-                8 => { } // framebuffer
                 9 => {
                     // elf sections
                     let num =     *(data as *const u32) as usize;
@@ -105,6 +100,10 @@ impl MultibootTags {
                         shndx:   shndx,
                     });
                 }
+                // TODO unhandled Mutliboot tags
+                3 => { } // NYI Modules
+                7 => { } // VBE
+                8 => { } // framebuffer
                 10 => { } // APM
                 11 => { } // EFI32
                 12 => { } // EFI64
@@ -141,11 +140,18 @@ impl MultibootTags {
 }
 
 /// Parses a null-terminated string from a tag
-unsafe fn parse_tag_str(data: usize, data_size: usize) -> Option<&'static str> {
+unsafe fn parse_tag_str(data: usize, data_size: usize, tag: usize) -> Option<&'static str> {
     let ptr = data as *const u8;
     let size = data_size - 1; // subtract null terminator
-    let bytes = core::slice::from_raw_parts(ptr, size);
-    core::str::from_utf8(bytes).ok()
+
+    if size == 0 { // empty string is None
+        None
+    } else {
+        let bytes = core::slice::from_raw_parts(ptr, size);
+        let s = core::str::from_utf8(bytes);
+        let s = s.unwrap_or_else(|_| panic!("Non-utf8 string in multiboot tag {}", tag));
+        Some(s)
+    }
 }
 
 

@@ -12,12 +12,21 @@
 #   run-verbose - run QEMU while logging interrupts
 #
 # The final product ISO file will be written to ./bin/denuos.iso
+#
+# Environment Variables:
+#
+# QEMU = qemu-system-x86_64
+#   Default emulator for `run` target
+# LD = ld
+#   Default linker for linking the kernel
 
 .PHONY: clean debug iso run run-verbose
 
 isofile := ./bin/denuos.iso
 
 QEMU ?= qemu-system-x86_64
+LD ?= ld
+
 run: $(isofile)
 	$(QEMU) $(QEMUFLAGS) -cdrom $<
 
@@ -55,7 +64,7 @@ bootsrcs := multiboot.s boot32.s boot64.s
 bootobjs := $(bootsrcs:%.s=%.o)
 bootobjs := $(addprefix ./bin/boot/, $(bootobjs))
 $(kernelbin): $(bootobjs) $(kernelobj)
-	ld --gc-sections -n -T ./src/kernel/arch/x86/boot/link.ld -o $@ $^
+	$(LD) --gc-sections -n -T ./src/kernel/arch/x86/boot/link.ld -o $@ $^
 
 ./bin/boot/%.o: ./src/kernel/arch/x86/boot/%.s | ./bin/boot
 	nasm -f elf64 -o $@ $<

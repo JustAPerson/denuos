@@ -90,6 +90,7 @@ pub fn initialize() {
 }
 
 /// Determines the IRQ number that was triggered
+#[allow(dead_code)]
 fn get_irq() -> Option<u8> {
     // read service registers
     PIC1.write_command(0x0b);
@@ -120,12 +121,12 @@ fn send_eoi(irq: u8) {
 
 isr_plain! {
     // TODO re-enable pic timer
-    0x20 => fn system_timer(state) {
+    0x20 => fn system_timer(_state) {
         // println!("timer");
         send_eoi(0);
     }
     // TODO re-enable pic keyboard input
-    0x21 => fn keyboard_input(state) {
+    0x21 => fn keyboard_input(_state) {
         // let sc = inb(0x60);
         // println!("keyboard {:#x}", sc);
         send_eoi(1);

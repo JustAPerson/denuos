@@ -49,7 +49,7 @@ pub fn initialize() {
 /// The function called in kernelspace by `syscall`
 #[naked]
 unsafe fn syscall_enter() {
-    fn action(regs: &mut Registers) {
+    fn action(_regs: &mut Registers) {
         println!("syscall'd");
     }
     asm!("

@@ -83,7 +83,7 @@ pub struct Registers {
 }
 
 impl Registers {
-    fn default_user(rip: usize, rsp: usize) -> Self {
+    pub fn default_user(rip: usize, rsp: usize) -> Self {
         use self::gdt::{USR_CODE_OFFSET, USR_DATA_OFFSET};
         Registers {
             rip: rip as u64, cs: USR_CODE_OFFSET as u16,

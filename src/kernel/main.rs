@@ -1,6 +1,3 @@
-use vga;
-use arch;
-
 /// Main architecture-independent kernel functionality
 ///
 /// Called from `arch::kstart()`

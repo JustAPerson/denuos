@@ -301,9 +301,7 @@ pub mod isr {
     }
 
     fn isr_unknown(state: &mut InterruptState) {
-        unsafe {
-            panic!("Unexpected interrupt: \n{:?}", state)
-        }
+        panic!("Unexpected interrupt: \n{:?}", state)
     }
 
     pub static ISR_UNKNOWN: [unsafe fn(); 256] = [

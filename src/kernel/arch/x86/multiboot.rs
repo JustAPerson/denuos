@@ -114,6 +114,9 @@ impl MultibootTags {
                 16 => { } // Network
                 17 => { } // EFI MMap
                 18 => { } // EFI BS
+                19 => { } // EFI 32b Image handle
+                20 => { } // EFI 64b Image handle
+                21 => { } // Image load base addr
                 i => panic!("Corrupt MultibootInfo Tag: {}", i)
             }
 

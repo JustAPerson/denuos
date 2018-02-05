@@ -27,10 +27,11 @@ isofile := ./bin/denuos.iso
 QEMU ?= qemu-system-x86_64
 LD ?= ld
 
+QEMUFLAGS += -cpu max
 run: $(isofile)
 	$(QEMU) $(QEMUFLAGS) -cdrom $<
 
-run-verbose: QEMUFLAGS=-d int -no-reboot
+run-verbose: QEMUFLAGS+=-d int -no-reboot
 run-verbose: run
 
 # See ./doc/Debugging.md for more info

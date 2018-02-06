@@ -19,6 +19,8 @@ use self::frame_allocator::{frame_alloc, get_fallocator};
 
 #[no_mangle]
 pub unsafe extern fn kstart(multiboot_tags: &MultibootTags) {
+    assert_minimum_cpuid();
+
     let multiboot_info = multiboot_tags.parse();
 
     // protect some memory regions from frame allocator
@@ -97,4 +99,23 @@ impl Registers {
             _pad: 0,
         }
     }
+}
+
+fn assert_minimum_cpuid() {
+    let cpuid = intrinsics::get_cpuid();
+    assert!(cpuid.supported, "minimum processor requirements unmet");
+
+    // presumably the rest of these requirements could be eliminated with extra work
+    assert!(cpuid.pse());
+    assert!(cpuid.pae());
+    assert!(cpuid.page1gb());
+    assert!(cpuid.msr());
+    assert!(cpuid.apic());
+    assert!(cpuid.syscall());
+    assert!(cpuid.rdpid() || cpuid.rdtscp()); // read processor id
+
+    println!("running on {} (family {:02x}, model {:02x})", cpuid.vendor_id().unwrap_or("unknown"),
+             cpuid.effective_family().unwrap(),
+             cpuid.effective_model().unwrap(),
+    );
 }

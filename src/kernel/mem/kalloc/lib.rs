@@ -4,7 +4,6 @@
 //! just leaked.
 #![feature(const_fn)]
 #![feature(allocator_internals)]
-#![feature(global_allocator)]
 #![feature(alloc)]
 #![feature(allocator_api)]
 
@@ -14,6 +13,8 @@ extern crate spin;
 extern crate alloc;
 
 use spin::Mutex;
+use alloc::alloc::{Alloc, GlobalAlloc, Layout, AllocErr};
+use core::ptr::NonNull;
 
 pub const HEAP_SIZE:  usize = 1024 * 1024; // 1MiB
 pub const HEAP_START: usize = 0xffff_e000_0000_0000;
@@ -35,24 +36,34 @@ impl BumpAllocator {
             end: start + size,
         }
     }
+}
 
-    fn allocate(&mut self, size: usize, align: usize) -> Option<*mut u8> {
+unsafe impl Alloc for BumpAllocator {
+    unsafe fn alloc(&mut self, layout: Layout) -> Result<NonNull<u8>, AllocErr> {
+        let size = layout.size();
+        let align = layout.align();
+
         let alloc_start = align_up(self.next, align);
         let alloc_end = alloc_start + size;
 
         if alloc_end <= self.end {
             self.next = alloc_end;
-            Some(alloc_start as *mut u8)
+
+            Ok(NonNull::new_unchecked(alloc_start as *mut u8))
         } else {
-            None
+            Err(AllocErr)
         }
+    }
+
+    unsafe fn dealloc(&mut self, _ptr: NonNull<u8>, _layout: Layout) {
+        // leak memory for time being
     }
 }
 
-use alloc::allocator::{Alloc, Layout, AllocErr};
 struct GlobalAllocator {
     allocator: Mutex<BumpAllocator>,
 }
+
 impl GlobalAllocator {
     const fn new() -> GlobalAllocator {
         GlobalAllocator {
@@ -61,14 +72,14 @@ impl GlobalAllocator {
     }
 }
 
-unsafe impl<'a> Alloc for &'a GlobalAllocator {
-    unsafe fn alloc(&mut self, layout: Layout) -> Result<*mut u8, AllocErr> {
+unsafe impl GlobalAlloc for GlobalAllocator {
+    unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
         let mut allocator = self.allocator.lock();
-        let ptr = allocator.allocate(layout.size(), layout.align());
-        Ok(ptr.expect("Out of heap memory"))
+        allocator.alloc(layout).map(|p| p.as_ptr()).unwrap_or(0 as *mut u8)
     }
-    unsafe fn dealloc(&mut self, _ptr: *mut u8, _layout: Layout) {
-        // leak memory for time being
+    unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
+        let mut allocator = self.allocator.lock();
+        allocator.dealloc(NonNull::new(ptr).expect("Attempt to dealloc null ptr"), layout);
     }
 }
 

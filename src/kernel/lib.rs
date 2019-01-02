@@ -4,8 +4,9 @@
 #![feature(const_fn)]
 #![feature(lang_items)]
 #![feature(naked_functions)]
-#![feature(unique)]
 #![feature(ptr_internals)]
+#![feature(panic_info_message)]
+#![feature(alloc_error_handler)]
 #![no_std]
 
 extern crate alloc;

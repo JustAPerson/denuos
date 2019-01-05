@@ -6,7 +6,7 @@ use core::alloc::Layout;
 
 #[panic_handler]
 pub fn rust_panic_handler(panic: &PanicInfo) -> ! {
-    use vga::print_error;
+    use crate::vga::print_error;
     // TODO SMP need to stop other cores
 
     let unknown = format_args!("unknown");

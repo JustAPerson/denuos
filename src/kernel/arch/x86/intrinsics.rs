@@ -176,7 +176,7 @@ impl CpuidResults {
     unsafe fn init_vendor_id(&mut self) {
         if let Some(ref leaf) = self.base[0] {
             self.vendor_id = Some([b' '; 12]);
-            let mut out = self.vendor_id.as_mut().unwrap() as *mut [u8; 12] as *mut u32;
+            let out = self.vendor_id.as_mut().unwrap() as *mut [u8; 12] as *mut u32;
             *out.offset(0) = leaf.ebx;
             *out.offset(1) = leaf.edx;
             *out.offset(2) = leaf.ecx;

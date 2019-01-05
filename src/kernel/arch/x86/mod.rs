@@ -1,4 +1,4 @@
-use main;
+use crate::main;
 
 pub mod frame_allocator;
 #[macro_use]

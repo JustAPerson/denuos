@@ -13,7 +13,7 @@ use core::ptr::Unique;
 use core::fmt;
 use spin::Mutex;
 
-use arch::x86::KERNEL_BASE;
+use crate::arch::x86::KERNEL_BASE;
 
 /// The number of rows of text
 pub const BUFFER_HEIGHT: usize = 25;
@@ -185,7 +185,7 @@ pub fn get_vgabuffer<'a>() -> &'a mut VgaBuffer {
 /// Prints a message in red text then stops execution
 pub fn print_error(fmt: fmt::Arguments) -> ! {
     use core::fmt::Write;
-    use arch::generic::intrinsics;
+    use crate::arch::generic::intrinsics;
     let vgabuffer = get_vgabuffer();
     vgabuffer.set_colorcode(ColorCode::new(Color::Red, Color::Black));
     let _ = vgabuffer.write_fmt(fmt);

@@ -12,11 +12,25 @@ pub fn outb(port: u16, data: u8) {
     unsafe { asm!("out dx, al" :: "{dx}"(port),"{al}"(data) :: "volatile","intel") }
 }
 
+/// Transmits 4 bytes to port
+#[inline(always)]
+pub fn outl(port: u16, data: u32) {
+    unsafe { asm!("out dx, eax" :: "{dx}"(port),"{eax}"(data) :: "volatile","intel") }
+}
+
 /// Receives byte from port
 #[inline(always)]
 pub fn inb(port: u16) -> u8 {
     let data;
     unsafe { asm!("in al, dx" : "={al}"(data) : "{dx}"(port) :: "volatile","intel") }
+    data
+}
+
+/// Receives 4 byte from port
+#[inline(always)]
+pub fn inl(port: u16) -> u32 {
+    let data;
+    unsafe { asm!("in eax, dx" : "={eax}"(data) : "{dx}"(port) :: "volatile","intel") }
     data
 }
 

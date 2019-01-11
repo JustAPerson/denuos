@@ -23,3 +23,4 @@ pub mod vga;
 pub mod arch;
 pub mod main;
 pub mod vestige;
+pub mod drivers;
